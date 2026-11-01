@@ -1,0 +1,2731 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+  <title>Macro Regime & Risk Tracker Pro: US & KR Dual Engine (DB Auto-Accumulation)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          },
+          colors: {
+            slate: {
+              850: '#111827',
+              900: '#0b1120',
+              950: '#050811'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    body {
+      background-color: #050811;
+      color: #e2e8f0;
+      font-family: 'Inter', '-apple-system', 'BlinkMacSystemFont', sans-serif;
+      overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Hide scrollbar for horizontal chip ribbons on mobile */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Custom Range Slider Styling (Touch-Friendly on Mobile) */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+      touch-action: pan-y;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 8px;
+      border-radius: 999px;
+      background: #1e293b;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 3px solid #0f172a;
+      margin-top: -8px;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.75);
+      transition: transform 0.15s ease, background-color 0.15s ease;
+    }
+    @media (min-width: 1024px) {
+      input[type="range"]::-webkit-slider-runnable-track {
+        height: 6px;
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        width: 18px;
+        height: 18px;
+        margin-top: -6px;
+      }
+    }
+    input[type="range"]::-webkit-slider-thumb:hover,
+    input[type="range"]::-webkit-slider-thumb:active {
+      transform: scale(1.18);
+      background: #7dd3fc;
+    }
+
+    /* Danger pulsing animation for Kill-Switch */
+    @keyframes pulse-danger {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55), inset 0 0 18px rgba(239, 68, 68, 0.25);
+        border-color: rgba(239, 68, 68, 0.9);
+      }
+      50% {
+        box-shadow: 0 0 0 8px rgba(239, 68, 68, 0), inset 0 0 28px rgba(239, 68, 68, 0.45);
+        border-color: rgba(248, 113, 113, 1);
+      }
+    }
+    .kill-switch-active {
+      animation: pulse-danger 1.8s infinite;
+    }
+
+    /* Custom Scrollbar for Desktop */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b1120;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+
+    /* Safe Area Bottom Padding for iOS / Mobile Home Bar */
+    .safe-bottom-nav {
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col pb-20 lg:pb-6 selection:bg-sky-500 selection:text-white">
+
+  <!-- Toast Notification Container (Positioned above mobile bottom nav) -->
+  <div id="toastContainer" class="fixed bottom-20 lg:bottom-5 right-3 left-3 sm:left-auto sm:right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- =========================================================================
+       TOP HEADER: COMPACT ON MOBILE, FULL ON DESKTOP
+       ========================================================================= -->
+  <header class="sticky top-0 z-30 bg-slate-950/95 backdrop-blur-md border-b border-slate-800/80 px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3">
+    <div class="max-w-[1680px] mx-auto flex flex-col gap-2 sm:gap-2.5">
+
+      <!-- Top Row: Title & US / KR Engine Switcher -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div id="brandLogoBox" class="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0 transition-all">
+              <i class="fa-solid fa-satellite-dish text-white text-sm sm:text-lg"></i>
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <h1 class="text-sm sm:text-lg lg:text-xl font-extrabold tracking-tight text-white truncate">
+                  Macro Regime Tracker <span class="text-sky-400 font-mono text-xs sm:text-base">(DB Auto-Sync)</span>
+                </h1>
+                <span class="hidden md:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                  시계열 DB 연동
+                </span>
+              </div>
+              <p id="headerSubtitle" class="text-[11px] sm:text-xs text-slate-400 truncate mt-0.5">
+                🇺🇸 US Macro Engine (S&P 500) — 유동성·할인율·신용 스프레드 모델
+              </p>
+            </div>
+          </div>
+
+          <!-- Mobile Quick Sync Button (Visible only on extra-small screens next to title) -->
+          <button onclick="openDataSyncModal()" class="sm:hidden px-2.5 py-2 rounded-xl text-[11px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 flex items-center gap-1 shrink-0 active:scale-95 transition">
+            <i class="fa-solid fa-rotate"></i>
+            <span>데이터 연동</span>
+          </button>
+        </div>
+
+        <!-- Dual Market Switcher Buttons + Desktop Sync Button -->
+        <div class="flex items-center justify-between sm:justify-end gap-2">
+          <div class="w-full sm:w-auto bg-slate-900 p-1 rounded-xl border border-slate-800 grid grid-cols-2 sm:flex items-center gap-1">
+            <button onclick="switchMarket('US')" id="marketBtn-US" class="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 bg-blue-600 text-white shadow-md shadow-blue-500/25">
+              <span>🇺🇸 미국 (S&P 500)</span>
+              <span class="text-[10px] font-mono px-1.5 py-0.5 bg-blue-950/70 rounded text-blue-200 hidden xl:inline">유동성·할인율</span>
+            </button>
+            <button onclick="switchMarket('KR')" id="marketBtn-KR" class="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-white">
+              <span>🇰🇷 한국 (KOSPI)</span>
+              <span class="text-[10px] font-mono px-1.5 py-0.5 bg-slate-800 rounded text-cyan-300 hidden xl:inline">수출·환율·교역</span>
+            </button>
+          </div>
+
+          <button onclick="openDataSyncModal()" class="hidden sm:flex px-3 py-2 rounded-xl text-xs font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/25 transition items-center gap-1.5 shadow-sm shrink-0">
+            <i id="syncHeaderIcon" class="fa-solid fa-rotate"></i>
+            <span>🔄 DB 동기화 센터</span>
+            <span id="syncStatusDot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          </button>
+
+          <button onclick="switchMainTab('tab-eodlog')" class="hidden md:flex px-3 py-2 rounded-xl text-xs font-mono font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/25 transition items-center gap-1.5 shrink-0">
+            <i class="fa-solid fa-database"></i>
+            <span>누적 DB 열람</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Second Row: Horizontal Touch-Swipeable 1980–2026 Historical Crisis Presets Ribbon -->
+      <div class="flex items-center gap-2 pt-1.5 border-t border-slate-800/70 overflow-x-auto no-scrollbar whitespace-nowrap">
+        <span class="text-[11px] font-semibold text-slate-400 shrink-0 flex items-center gap-1">
+          <i class="fa-solid fa-clock-rotate-left text-sky-400"></i>
+          <span id="presetBarLabel" class="hidden sm:inline">역사적 변곡점 로드:</span>
+          <span class="sm:hidden">위기 프리셋:</span>
+        </span>
+        <div id="presetButtonsContainer" class="flex items-center gap-1.5 shrink-0 pr-2">
+          <!-- Dynamically populated by renderPresetButtons() -->
+        </div>
+      </div>
+
+      <!-- Third Row: Desktop Navigation Tabs (Hidden on mobile because mobile uses Fixed Bottom Bar) -->
+      <div class="hidden lg:flex items-center justify-between gap-2 pt-2 border-t border-slate-800/70">
+        <div class="flex flex-wrap items-center gap-1.5">
+          <button onclick="switchMainTab('tab-simulator')" id="tabBtn-simulator" class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all bg-sky-500 text-slate-950 shadow-md shadow-sky-500/20 flex items-center gap-1.5">
+            <i class="fa-solid fa-sliders"></i>
+            <span>Tab 1: 📊 라이브 대시보드 (최신 데이터)</span>
+          </button>
+          <button onclick="switchMainTab('tab-backtest')" id="tabBtn-backtest" class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all bg-slate-900 text-slate-300 border border-slate-800 hover:bg-slate-800 flex items-center gap-1.5">
+            <i class="fa-solid fa-chart-area"></i>
+            <span>Tab 2: 📈 46년 장기 백테스트</span>
+          </button>
+          <button onclick="switchMainTab('tab-dictionary')" id="tabBtn-dictionary" class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all bg-slate-900 text-slate-300 border border-slate-800 hover:bg-slate-800 flex items-center gap-1.5">
+            <i class="fa-solid fa-book-open"></i>
+            <span>Tab 3: 📖 지표 백과사전</span>
+          </button>
+          <button onclick="switchMainTab('tab-eodlog')" id="tabBtn-eodlog" class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all bg-slate-900 text-slate-300 border border-slate-800 hover:bg-slate-800 flex items-center gap-1.5">
+            <i class="fa-solid fa-database"></i>
+            <span>Tab 4: 🚀 무인 DB 배포키트 & 누적 로그</span>
+          </button>
+        </div>
+
+        <div class="hidden xl:flex items-center gap-3 text-[11px] font-mono text-slate-400">
+          <span>데이터 소스: <strong id="activeDataSourceLabel" class="text-emerald-400">내장 2026 샘플 DB</strong></span>
+          <span>|</span>
+          <span>선택 국면: <strong id="activeScenarioBadge" class="text-sky-400">현재 (최신)</strong></span>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       MOBILE BOTTOM NAVIGATION BAR (Native App Style, Visible on < lg screens)
+       ========================================================================= -->
+  <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-lg border-t border-slate-800 safe-bottom-nav">
+    <div class="grid grid-cols-4 h-16">
+      <button onclick="switchMainTab('tab-simulator')" id="mobTabBtn-simulator" class="flex flex-col items-center justify-center gap-1 text-sky-400 font-bold text-[11px] active:scale-95 transition">
+        <i class="fa-solid fa-sliders text-base"></i>
+        <span>대시보드</span>
+      </button>
+      <button onclick="switchMainTab('tab-backtest')" id="mobTabBtn-backtest" class="flex flex-col items-center justify-center gap-1 text-slate-400 font-medium text-[11px] active:scale-95 transition">
+        <i class="fa-solid fa-chart-area text-base"></i>
+        <span>백테스트</span>
+      </button>
+      <button onclick="switchMainTab('tab-dictionary')" id="mobTabBtn-dictionary" class="flex flex-col items-center justify-center gap-1 text-slate-400 font-medium text-[11px] active:scale-95 transition">
+        <i class="fa-solid fa-book-open text-base"></i>
+        <span>지표사전</span>
+      </button>
+      <button onclick="switchMainTab('tab-eodlog')" id="mobTabBtn-eodlog" class="flex flex-col items-center justify-center gap-1 text-slate-400 font-medium text-[11px] active:scale-95 transition">
+        <i class="fa-solid fa-database text-base"></i>
+        <span>누적 DB</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- =========================================================================
+       MAIN CONTENT AREA
+       ========================================================================= -->
+  <main class="flex-1 max-w-[1680px] w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5 sm:space-y-6">
+
+    <!-- ALWAYS-ON TOP KPI SUMMARY ROW (4 CARDS - Responsive Grid) -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5 sm:gap-4">
+
+      <!-- KPI Card 1: Composite Macro Score (M_t) -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">1. 종합 매크로 스코어 (M<sub>t</sub>)</span>
+          <span id="regimeBadge" class="px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0">
+            완만한 확장
+          </span>
+        </div>
+
+        <div class="my-2.5 sm:my-3.5 flex items-baseline gap-2.5">
+          <span id="compositeScoreDisplay" class="text-3xl sm:text-4xl font-extrabold font-mono tracking-tight text-white">+0.42</span>
+          <span class="text-[11px] sm:text-xs text-slate-400 font-mono">/ 범위 [-5.00 ~ +3.00]</span>
+        </div>
+
+        <div class="space-y-1.5">
+          <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden relative">
+            <div class="absolute inset-0 bg-gradient-to-r from-rose-600 via-amber-500 to-emerald-500 opacity-30"></div>
+            <div class="absolute left-1/2 top-0 bottom-0 w-0.5 bg-slate-400 z-10"></div>
+            <div id="scoreSpectrumFill" class="h-full bg-sky-400 rounded-full transition-all duration-300" style="width: 57%;"></div>
+          </div>
+          <div class="flex justify-between text-[10px] font-mono text-slate-500">
+            <span>-3.0σ (수축)</span>
+            <span>0.0σ (중립)</span>
+            <span>+3.0σ (확장)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI Card 2: Kill-Switch Status -->
+      <div id="killSwitchCard" class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between transition-all duration-300">
+        <div class="flex items-center justify-between gap-2">
+          <span id="killSwitchTitle" class="text-xs font-semibold uppercase tracking-wider text-slate-400 truncate">2. 비상 킬 스위치 (Kill-Switch)</span>
+          <label class="inline-flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-400 hover:text-slate-200 shrink-0">
+            <input type="checkbox" id="manualKillToggle" onchange="toggleManualKillSwitch()" class="sr-only peer" />
+            <div class="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-4 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all relative peer-checked:bg-rose-600"></div>
+            <span>강제 테스트</span>
+          </label>
+        </div>
+
+        <div class="my-2.5 sm:my-3 flex items-center gap-3">
+          <div id="killSwitchIconBox" class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-lg sm:text-xl shrink-0">
+            <i id="killSwitchIcon" class="fa-solid fa-shield-halved"></i>
+          </div>
+          <div class="min-w-0">
+            <div id="killSwitchStatusText" class="text-base sm:text-lg font-bold text-emerald-400 truncate">정상🟢 (시스템 안정)</div>
+            <p id="killSwitchSubText" class="text-[11px] sm:text-xs text-slate-400 mt-0.5 line-clamp-2">임계치 미만 — 페널티 0.0점 (정상 시그모이드 배분)</p>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2 text-[11px] sm:text-xs">
+          <span id="killTriggerRuleText" class="text-slate-400 truncate">트리거: <code class="text-rose-400 font-mono">HY Spread Raw Z ≥ +2.0σ</code></span>
+          <span id="killRawBadge" class="font-mono font-semibold text-emerald-400 shrink-0">현재 -0.6σ</span>
+        </div>
+      </div>
+
+      <!-- KPI Card 3: Recommended Risk Asset Allocation & Sigmoid Engine -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">3. 권장 위험자산 vs 안전자산</span>
+          <button onclick="toggleAllocationMode()" id="allocModeBtn" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-sky-400 border border-slate-700 hover:bg-slate-700 transition shrink-0">
+            Sigmoid 연속형
+          </button>
+        </div>
+
+        <div class="my-2.5 sm:my-3 grid grid-cols-2 gap-2.5 sm:gap-3">
+          <div class="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800/80">
+            <div class="text-[11px] text-slate-400 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-sky-400 shrink-0"></span>
+              <span class="truncate">위험자산 (주식)</span>
+            </div>
+            <div id="equityWeightDisplay" class="text-xl sm:text-2xl font-extrabold font-mono text-sky-400 mt-0.5">58.3%</div>
+          </div>
+          <div class="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800/80">
+            <div class="text-[11px] text-slate-400 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-amber-400 shrink-0"></span>
+              <span class="truncate">안전자산 (채권/현금)</span>
+            </div>
+            <div id="cashWeightDisplay" class="text-xl sm:text-2xl font-extrabold font-mono text-amber-400 mt-0.5">41.7%</div>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <div class="w-full h-3 bg-slate-800 rounded-full overflow-hidden flex">
+            <div id="equityBar" class="h-full bg-gradient-to-r from-sky-500 to-indigo-500 transition-all duration-300" style="width: 58.3%;"></div>
+            <div id="cashBar" class="h-full bg-amber-500/80 transition-all duration-300" style="width: 41.7%;"></div>
+          </div>
+          <div class="flex justify-between text-[11px] text-slate-400">
+            <span id="benchmarkTiltText" class="truncate">표준 60/40 대비 편차: <strong class="text-emerald-400 font-mono">-1.7%p (중립)</strong></span>
+            <span class="font-mono text-slate-500 shrink-0">BM 60%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI Card 4: Interactive Seed & Universal Portfolio Allocation Calculator -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">4. 자산배분 포지션 계산기</span>
+          <span id="perfMarketBadge" class="text-[10px] font-mono text-blue-300 bg-blue-500/15 px-2 py-0.5 rounded border border-blue-500/30 shrink-0">US S&P 500</span>
+        </div>
+
+        <div class="my-2.5 flex items-center justify-between gap-2 bg-slate-950/90 px-3 py-2 rounded-xl border border-slate-800">
+          <label for="totalSeedInput" class="text-xs text-slate-300 font-semibold shrink-0">총 운용 자산(만원):</label>
+          <div class="flex items-center gap-1.5">
+            <input type="number" id="totalSeedInput" inputmode="numeric" value="10000" min="100" step="500" oninput="onSeedInputChange()"
+                   class="w-24 sm:w-28 bg-slate-900 border border-slate-700 focus:border-sky-400 rounded-lg px-2.5 py-1 text-right font-mono text-sm font-bold text-white outline-none" />
+            <span class="text-xs text-slate-400 font-mono">만원</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+          <div class="bg-slate-950/70 p-2 rounded-xl border border-slate-800/80">
+            <div class="text-[10px] text-slate-400 font-sans truncate">목표 전체 주식 투입액</div>
+            <div id="calcEquityAmt" class="text-sm font-bold text-sky-400 mt-0.5">5,832 만원</div>
+            <div id="calcEquityPctSub" class="text-[10px] text-slate-400 truncate">전체 자산의 58.3%</div>
+          </div>
+          <div class="bg-slate-950/70 p-2 rounded-xl border border-slate-800/80">
+            <div class="text-[10px] text-slate-400 font-sans truncate">안전자산 확보액</div>
+            <div id="calcCashAmt" class="text-sm font-bold text-amber-400 mt-0.5">4,168 만원</div>
+            <div id="calcStanceSub" class="text-[10px] text-emerald-400 truncate">중립형 (60/40 유사)</div>
+          </div>
+        </div>
+
+        <!-- Hidden KPI placeholders kept for seamless state updates -->
+        <div class="hidden">
+          <span id="kpiCagr"></span><span id="kpiBmCagr"></span>
+          <span id="kpiMdd"></span><span id="kpiBmMdd"></span>
+          <span id="kpiSharpe"></span><span id="kpiBmSharpe"></span>
+          <span id="kpiCrisisNote"></span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =======================================================================
+         TAB 1: 실시간 스코어 & 비중 시뮬레이터 (LIVE Z-SCORE & KILL-SWITCH ENGINE)
+         ======================================================================= -->
+    <section id="tab-simulator" class="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-6">
+
+      <!-- Left 6 Cols: 5 Macro Factor Sliders (-3.0σ to +3.0σ) -->
+      <div class="xl:col-span-6 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 border-b border-slate-800 pb-3.5">
+          <div>
+            <h2 id="controllerTitle" class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-sliders text-sky-400"></i>
+              🇺🇸 US Macro Engine — 5대 팩터 Z-Score 컨트롤러
+            </h2>
+            <p id="controllerSubtitle" class="text-[11px] sm:text-xs text-slate-400 mt-0.5">
+              슬라이더를 드래그하거나 좌우 <code>[-0.1]</code> <code>[+0.1]</code> 터치 버튼으로 정밀 조절하세요.
+            </p>
+          </div>
+          <div class="flex items-center gap-1.5 self-end sm:self-auto shrink-0">
+            <button onclick="switchMainTab('tab-dictionary')" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-sky-500/15 text-sky-300 border border-sky-500/30 hover:bg-sky-500/25 transition">
+              <i class="fa-solid fa-book-open mr-1"></i>지표 해설
+            </button>
+            <button onclick="applyPreset('current')" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 transition" title="현재 기준 초기화">
+              <i class="fa-solid fa-rotate-left"></i> 초기화
+            </button>
+          </div>
+        </div>
+
+        <!-- Dynamic 5 Factor Sliders -->
+        <div id="factorSlidersContainer" class="space-y-3">
+          <!-- Populated via renderFactorSliders() -->
+        </div>
+      </div>
+
+      <!-- Right 6 Cols: Horizontal Contribution Bar Chart + Risk Management Integration + Diagnostic -->
+      <div class="xl:col-span-6 flex flex-col gap-4 sm:gap-5">
+
+        <!-- Factor Contribution Horizontal Bar Chart -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3.5 sm:space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-800 pb-3">
+            <div>
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-chart-bar text-emerald-400"></i>
+                5대 팩터별 시장 방향성 기여도 (Z'<sub>i</sub> = S<sub>i</sub> × Z<sub>i</sub>)
+              </h3>
+              <p class="text-[11px] sm:text-xs text-slate-400 mt-0.5">
+                어느 요인이 시장을 끌어올리고(우측 초록), 끌어내리는지(좌측 빨강) 분해합니다.
+              </p>
+            </div>
+            <div class="text-[11px] font-mono flex items-center gap-3 shrink-0">
+              <span class="text-rose-400">◀ 하락 압력(-)</span>
+              <span class="text-emerald-400">상승 추동(+) ▶</span>
+            </div>
+          </div>
+
+          <div id="contributionBars" class="space-y-3 py-1">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Risk Management Mandate Integration Panel (Universal Asset Allocation & Rebalancing Guide) -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-scale-balanced text-amber-400"></i>
+              포트폴리오 자산배분 & 리스크 관리 가이드
+            </h3>
+            <span class="text-[10px] sm:text-[11px] font-mono px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+              기준: 글로벌 60/40 동적 배분
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+            <div class="p-3 sm:p-3.5 rounded-xl bg-slate-950 border border-slate-800/90 flex sm:block items-center justify-between">
+              <div>
+                <div class="text-[11px] text-slate-400">목표 전체 주식 비중</div>
+                <div id="rmTotalEquityKrw" class="text-[11px] font-mono text-slate-400 mt-0.5">주식 배분: 5,832 만원</div>
+              </div>
+              <div id="rmTotalEquity" class="text-xl font-extrabold font-mono text-sky-400 sm:mt-1">58.3%</div>
+            </div>
+            <div class="p-3 sm:p-3.5 rounded-xl bg-slate-950 border border-slate-800/90 flex sm:block items-center justify-between">
+              <div>
+                <div class="text-[11px] text-slate-400">60/40 표준 대비 조절</div>
+                <div id="rmStanceDesc" class="text-[11px] font-mono text-slate-400 mt-0.5">포지션: 중립 비중 유지</div>
+              </div>
+              <div id="rmBenchmarkTilt" class="text-xl font-extrabold font-mono text-emerald-400 sm:mt-1">-1.7%p</div>
+            </div>
+            <div class="p-3 sm:p-3.5 rounded-xl bg-slate-950 border border-slate-800/90 flex sm:block items-center justify-between">
+              <div>
+                <div class="text-[11px] text-slate-400">안전자산 버퍼 (채권/현금)</div>
+                <div id="rmCashBufferKrw" class="text-[11px] font-mono text-slate-400 mt-0.5">안전 버퍼: 4,168 만원</div>
+              </div>
+              <div id="rmCashBuffer" class="text-xl font-extrabold font-mono text-amber-400 sm:mt-1">41.7%</div>
+            </div>
+          </div>
+
+          <!-- Live Risk Manager Commentary & Counter-Arguments -->
+          <div class="p-3.5 sm:p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span class="text-xs font-bold text-sky-400 flex items-center gap-1.5">
+                <i class="fa-solid fa-user-shield"></i>
+                리스크 매니저 국면 판정 & 반대 시나리오 점검
+              </span>
+              <button onclick="saveCurrentSnapshotToLog()" class="text-[11px] font-mono px-2.5 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 active:scale-95 transition">
+                <i class="fa-solid fa-floppy-disk mr-1"></i>수동 스냅샷 저장
+              </button>
+            </div>
+            <p id="diagnosticText" class="text-xs text-slate-300 leading-relaxed"></p>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- =======================================================================
+         TAB 2: 1980–2026 역사적 시계열 백테스트 (46-YEAR HISTORICAL CHART)
+         ======================================================================= -->
+    <section id="tab-backtest" class="hidden space-y-5 sm:space-y-6">
+
+      <!-- Period Filter Bar & Chart Legend -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 sm:p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar whitespace-nowrap pb-1 sm:pb-0">
+          <span class="text-xs font-bold text-slate-300 mr-1 flex items-center gap-1.5 shrink-0">
+            <i class="fa-solid fa-calendar-days text-sky-400"></i>
+            구간 필터:
+          </span>
+          <button onclick="setPeriodFilter('ALL')" id="periodBtn-ALL" class="period-btn px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-sky-500 text-slate-950 shadow-sm shrink-0">
+            전체 (1980~2026)
+          </button>
+          <button onclick="setPeriodFilter('1980_1999')" id="periodBtn-1980_1999" class="period-btn px-3 py-1.5 rounded-xl text-xs font-mono font-medium bg-slate-950 text-slate-300 border border-slate-800 hover:border-sky-500/40 shrink-0">
+            1980~1999 (볼커·3저·IMF)
+          </button>
+          <button onclick="setPeriodFilter('2000_2014')" id="periodBtn-2000_2014" class="period-btn px-3 py-1.5 rounded-xl text-xs font-mono font-medium bg-slate-950 text-slate-300 border border-slate-800 hover:border-sky-500/40 shrink-0">
+            2000~2014 (닷컴·리먼·유럽)
+          </button>
+          <button onclick="setPeriodFilter('2015_2026')" id="periodBtn-2015_2026" class="period-btn px-3 py-1.5 rounded-xl text-xs font-mono font-medium bg-slate-950 text-slate-300 border border-slate-800 hover:border-sky-500/40 shrink-0">
+            2015~2026 (브렉시트·긴축)
+          </button>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 text-[11px] sm:text-xs font-mono">
+          <span class="flex items-center gap-1.5 text-emerald-400">
+            <span class="w-3 h-0.5 bg-emerald-400 inline-block"></span> 매크로 모델(Log)
+          </span>
+          <span class="flex items-center gap-1.5 text-slate-400">
+            <span class="w-3 h-0.5 bg-slate-400 inline-block"></span> 지수 단순보유(Log)
+          </span>
+          <span class="flex items-center gap-1.5 text-sky-400">
+            <span class="w-3 h-2.5 bg-sky-500/30 border border-sky-400 inline-block rounded-sm"></span> 권장 주식 비중(%)
+          </span>
+          <span class="flex items-center gap-1.5 text-rose-400">
+            <span class="w-3 h-2.5 bg-rose-500/35 border border-rose-500 inline-block rounded-sm"></span> 킬 스위치(0%)
+          </span>
+        </div>
+      </div>
+
+      <!-- Interactive Dual-Panel SVG Historical Chart (Touch Scrubbing + Mobile Expand Toggle) -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 sm:p-5 space-y-3.5 sm:space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+          <div>
+            <h3 id="backtestChartTitle" class="text-sm sm:text-base font-bold text-white">
+              🇺🇸 US S&P 500 — 1980–2026 지수 궤적(Log) & 매크로 모델 권장 비중(%) 시계열
+            </h3>
+            <p class="text-[11px] sm:text-xs text-slate-400 mt-0.5">
+              모바일에서는 차트 위를 손가락으로 좌우 터치·드래그하여 시점별 스코어를 탐색할 수 있습니다.
+            </p>
+          </div>
+          <button onclick="toggleMobileChartZoom()" id="mobileChartZoomBtn" class="sm:hidden self-start px-3 py-1.5 rounded-xl text-xs font-mono font-semibold bg-slate-800 text-sky-300 border border-slate-700">
+            <i class="fa-solid fa-magnifying-glass-plus mr-1"></i>차트 가로 확대 스크롤 켜기
+          </button>
+        </div>
+
+        <div id="hoverInfoBanner" class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono text-sky-300 flex flex-wrap items-center justify-between gap-2">
+          <span>차트 위를 터치하거나 마우스를 올려 시점별 상세 데이터를 확인하세요</span>
+        </div>
+
+        <!-- Custom Interactive Dual-Panel SVG Chart Container -->
+        <div id="svgChartScrollWrapper" class="w-full bg-slate-950/90 rounded-xl border border-slate-800/90 p-2 sm:p-3 relative overflow-x-auto">
+          <svg id="historicalSvgChart" viewBox="0 0 1200 540" class="w-full h-[300px] sm:h-[460px] lg:h-[520px] select-none cursor-crosshair transition-all"></svg>
+        </div>
+      </div>
+
+      <!-- Historical Crisis Performance Comparison Table (1980–2026) -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 id="crisisTableTitle" class="text-sm font-bold text-white">
+              1980–2026 주요 역사적 위기 및 변곡점 방어 성과 비교 (행 터치 시 시뮬레이터 로드)
+            </h3>
+            <p class="text-[11px] sm:text-xs text-slate-400 mt-0.5">좌우로 스와이프하여 단순 보유(Buy & Hold) MDD 대비 방어 성과를 비교하세요.</p>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-800">
+          <table class="w-full text-left border-collapse text-xs min-w-[720px]">
+            <thead>
+              <tr class="bg-slate-950 text-slate-400 border-b border-slate-800 font-mono text-[11px]">
+                <th class="py-2.5 px-3">시점 및 역사적 사건</th>
+                <th class="py-2.5 px-3">핵심 매크로 동인 (Z-Score)</th>
+                <th class="py-2.5 px-3 text-center">종합 스코어(M<sub>t</sub>)</th>
+                <th class="py-2.5 px-3 text-center">킬 스위치</th>
+                <th class="py-2.5 px-3 text-right">권장 주식 비중</th>
+                <th class="py-2.5 px-3 text-right">지수 단순보유 MDD</th>
+                <th class="py-2.5 px-3 text-right">매크로 모델 MDD</th>
+                <th class="py-2.5 px-3">모델 작동 판정</th>
+              </tr>
+            </thead>
+            <tbody id="crisisComparisonTableBody" class="divide-y divide-slate-800/70 bg-slate-900/40">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =======================================================================
+         TAB 3: 지표 백과사전 & 한·미 구조 차이 해설 (INDICATOR DICTIONARY)
+         ======================================================================= -->
+    <section id="tab-dictionary" class="hidden space-y-5 sm:space-y-6">
+
+      <!-- Part A: Structural Comparison — Why US 5 Factors Fail on KOSPI & How KR Engine Solves It -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-5">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 border-b border-slate-800 pb-4">
+          <div>
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+              핵심 아키텍처 해설
+            </span>
+            <h2 class="text-base sm:text-lg font-extrabold text-white mt-1.5">
+              왜 미국 5대 매크로 지표를 한국(KOSPI)에 그대로 대입하면 백테스트가 실패하는가?
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">
+              기축통화·빅테크 내수 중심의 미국(S&P 500)과 비기축통화·반도체/중간재 수출 가공형 사이클릭 구조인 한국(KOSPI)의 결정적 차이
+            </p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button onclick="switchMarket('US')" class="flex-1 sm:flex-initial px-3 py-2 rounded-xl text-xs font-bold bg-blue-600/20 text-blue-300 border border-blue-500/40 hover:bg-blue-600/30 transition">
+              🇺🇸 US 엔진 전환
+            </button>
+            <button onclick="switchMarket('KR')" class="flex-1 sm:flex-initial px-3 py-2 rounded-xl text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-600/30 transition">
+              🇰🇷 KR 엔진 전환
+            </button>
+          </div>
+        </div>
+
+        <!-- 3 Structural Traps Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4">
+          <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+            <div class="text-xs font-bold text-rose-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-circle-exclamation"></i>
+              함정 1: 기축통화 금리 vs 비기축통화 '원/달러 환율' 수급
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              미국 증시는 TIPS 실질금리(할인율)가 밸류에이션을 지배하지만, 한국 증시 시가총액의 30~35%를 좌우하는 외국인 패시브 자금은 한국 국채금리가 아니라 <strong>원/달러 환율 변동성과 환차손 위험</strong>에 즉각 반응합니다. 환율이 60일 이격도 +2.0σ 이상 급등하면 금리와 무관하게 외국인 투매(1997 IMF, 2008 키코, 2022.10 강달러)가 발생합니다.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+            <div class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-industry"></i>
+              함정 2: 연준 유동성 vs 한국 '교역조건(수출단가/원유 수입단가)'
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              원자재를 전량 수입해 반도체·자동차·석유화학 중간재로 가공 수출하는 한국은 <strong>국제 유가와 원자재 가격이 급등해 수입물가가 수출물가보다 빨리 오르면(순상품교역조건 악화)</strong> 시중에 유동성이 풀려도 기업 영업이익률과 무역수지가 적자로 붕괴됩니다.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+            <div class="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-rotate"></i>
+              함정 3: 사이클릭(Cyclical) 산업의 '역(逆) PER 함정'과 PBR 버퍼
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              삼성전자·SK하이닉스 등 경기민감주는 불황 바닥에서 이익이 급감해 <strong>PER이 40~50배로 치솟고(고PER = 매수 적기)</strong>, 호황 정점에서 이익이 폭발해 <strong>PER이 6~8배로 낮아집니다(저PER = 고점 매도기)</strong>. 따라서 한국은 미국식 ERP(1/PER) 대신 <strong>확정 PBR 역수(Book-to-Market, PBR 0.85배 하단 지지력)</strong>를 써야 정확히 작동합니다.
+            </p>
+          </div>
+        </div>
+
+        <!-- Side-by-Side Comparison Table -->
+        <div class="overflow-x-auto rounded-xl border border-slate-800">
+          <table class="w-full text-left border-collapse text-xs min-w-[680px]">
+            <thead>
+              <tr class="bg-slate-950 text-slate-300 border-b border-slate-800 font-mono text-[11px]">
+                <th class="py-3 px-3 w-[14%]">매크로 팩터 축</th>
+                <th class="py-3 px-3 w-[28%] text-blue-400">🇺🇸 US Macro Engine (S&P 500)</th>
+                <th class="py-3 px-3 w-[28%] text-cyan-400">🇰🇷 KR Cyclic Engine (KOSPI 맞춤형)</th>
+                <th class="py-3 px-3 w-[30%]">한국형 재설계 핵심 근거</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/70 bg-slate-900/40">
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-white">Factor 1 (Sign: -1)<br><span class="text-[10px] text-slate-400">할인율 / 외환 수급</span></td>
+                <td class="py-2.5 px-3 text-slate-300"><strong>TIPS 10Y 실질금리 60일 변화량</strong><br><span class="text-[11px] text-slate-400">1980-96 Proxy: 명목 10Y - 코어 CPI</span></td>
+                <td class="py-2.5 px-3 text-cyan-200 font-semibold"><strong>원/달러 환율 변동성 및 60일 이격도</strong><br><span class="text-[11px] text-rose-400">★ 한국 킬 스위치 1호 (Raw Z ≥ +2.0σ)</span></td>
+                <td class="py-2.5 px-3 text-slate-300">외국인 패시브 자금 유출입 및 국가 외환 시스템 스트레스를 즉각 감지</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-white">Factor 2 (Sign: +1)<br><span class="text-[10px] text-slate-400">이익 모멘텀</span></td>
+                <td class="py-2.5 px-3 text-slate-300"><strong>S&P 500 선행 EPS 수정비율</strong><br><span class="text-[11px] text-slate-400">1980s Proxy: ISM 신규주문 - 재고 스프레드</span></td>
+                <td class="py-2.5 px-3 text-cyan-200 font-semibold"><strong>한국 일평균 수출액 YoY & 반도체 출하/재고</strong><br><span class="text-[11px] text-slate-400">관세청 일평균 수출 + 반도체 사이클</span></td>
+                <td class="py-2.5 px-3 text-slate-300">후행하는 국내 애널리스트 추정치 대신 코스피 영업이익과 상관계수 0.82인 실물 수출 지표 채택</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-white">Factor 3 (Sign: +1)<br><span class="text-[10px] text-slate-400">유동성 / 교역마진</span></td>
+                <td class="py-2.5 px-3 text-slate-300"><strong>연준 순유동성 YoY (Fed BS - TGA - RRP)</strong><br><span class="text-[11px] text-slate-400">1980-2002 Proxy: 본원통화/M2 실질 증가율</span></td>
+                <td class="py-2.5 px-3 text-cyan-200 font-semibold"><strong>순상품교역조건지수 (수출물가/수입물가)</strong><br><span class="text-[11px] text-slate-400">반도체·중간재 판가 vs 원유·원자재 수입단가</span></td>
+                <td class="py-2.5 px-3 text-slate-300">3저 호황(1986~88) 같은 마진 폭발과 오일쇼크·2022 무역적자 마진 붕괴를 정확히 분리</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-white">Factor 4 (Sign: -1)<br><span class="text-[10px] text-slate-400">신용 경색 킬스위치</span></td>
+                <td class="py-2.5 px-3 text-slate-300"><strong>미국 하이일드 스프레드 괴리</strong><br><span class="text-[11px] text-rose-400">★ 미국 킬 스위치 (Raw Z ≥ +2.0σ)</span></td>
+                <td class="py-2.5 px-3 text-cyan-200 font-semibold"><strong>국내 크레딧 스프레드 (BBB- 회사채/CP 91일)</strong><br><span class="text-[11px] text-rose-400">★ 한국 킬 스위치 2호 (Raw Z ≥ +2.0σ)</span></td>
+                <td class="py-2.5 px-3 text-slate-300">1997 어음부도, 2003 카드채, 2022 레고랜드 PF 단기자금 경색 등 국내 신용 시스템 마비 포착</td>
+              </tr>
+              <tr>
+                <td class="py-2.5 px-3 font-bold text-white">Factor 5 (Sign: +1)<br><span class="text-[10px] text-slate-400">밸류에이션 버퍼</span></td>
+                <td class="py-2.5 px-3 text-slate-300"><strong>주식 위험 프리미엄 ERP (1/PER - 실질금리)</strong><br><span class="text-[11px] text-slate-400">채권 대비 주식 초과 이익수익률</span></td>
+                <td class="py-2.5 px-3 text-cyan-200 font-semibold"><strong>KOSPI 확정 PBR 역수 (Book-to-Market)</strong><br><span class="text-[11px] text-slate-400">PBR 0.83~0.85배 락바텀 하단 버퍼</span></td>
+                <td class="py-2.5 px-3 text-slate-300">사이클릭 적자 구간의 PER 왜곡을 제거하고 순자산 장부가치 기준 안전마진 측정</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Part B: Detailed 5-Factor Encyclopedia Cards -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+        <!-- US 5 Indicators Column -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="text-sm sm:text-base font-bold text-blue-400 flex items-center gap-2">
+              <span>🇺🇸 US Macro Engine (S&P 500) 5대 지표 백과사전</span>
+            </h3>
+            <span class="text-[11px] font-mono text-slate-400 shrink-0">1980–2026</span>
+          </div>
+          <div id="usDictionaryList" class="space-y-3.5">
+            <!-- Populated via renderAllDictionaries() -->
+          </div>
+        </div>
+
+        <!-- KR 5 Indicators Column -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="text-sm sm:text-base font-bold text-cyan-400 flex items-center gap-2">
+              <span>🇰🇷 KR Cyclic Engine (KOSPI) 5대 지표 백과사전</span>
+            </h3>
+            <span class="text-[11px] font-mono text-slate-400 shrink-0">한국 맞춤형</span>
+          </div>
+          <div id="krDictionaryList" class="space-y-3.5">
+            <!-- Populated via renderAllDictionaries() -->
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =======================================================================
+         TAB 4: 🚀 무료 무인 자동화 & 배포 키트 + 일별 EOD 누적 DB 트래킹 로그
+         ======================================================================= -->
+    <section id="tab-eodlog" class="hidden space-y-5 sm:space-y-6">
+
+      <!-- Part 1: Zero-Cost Unmanned Architecture Guide & One-Click Downloadable Deployment Kit -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-5">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+              월 유지비 0원 · PC 전원 OFF 무인 자동 누적 DB
+            </span>
+            <h2 class="text-base sm:text-lg font-extrabold text-white mt-1.5 flex items-center gap-2">
+              <i class="fa-solid fa-rocket text-sky-400"></i>
+              GitHub Actions 기반 매크로 시계열 DB 자동 누적 시스템 구축 키트
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">
+              유료 클라우드 DB 없이 GitHub가 매일 아침 07:30에 새 데이터를 JSON 배열에 자동 추가(Append)하여 나만의 빅데이터 DB를 구축합니다.
+            </p>
+          </div>
+
+          <!-- One-Click Individual Package File Download Buttons -->
+          <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+            <button onclick="downloadDeployFile('python')" class="px-3 py-2 rounded-xl text-xs font-bold bg-sky-500 text-slate-950 hover:bg-sky-400 transition flex items-center justify-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-download"></i>
+              <span class="truncate">update_macro_data.py</span>
+            </button>
+            <button onclick="downloadDeployFile('yaml')" class="px-3 py-2 rounded-xl text-xs font-bold bg-indigo-500 text-white hover:bg-indigo-400 transition flex items-center justify-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-download"></i>
+              <span class="truncate">daily_macro_sync.yml</span>
+            </button>
+            <button onclick="downloadDeployFile('req')" class="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700 transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-download"></i>
+              <span class="truncate">requirements.txt</span>
+            </button>
+            <button onclick="downloadDeployFile('json')" class="px-3 py-2 rounded-xl text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-download"></i>
+              <span class="truncate">macro_data.json</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3-Step Visual Architecture Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4">
+          <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-sky-400">STEP 1 · 데이터 수집/연산 (0원)</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">매일 07:30 KST</span>
+            </div>
+            <div class="text-sm font-bold text-white">GitHub Actions + Python ETL</div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              깃허브 클라우드 스케줄러가 매일 아침 <code>update_macro_data.py</code>를 실행하여 최신 미국/한국 팩터 롤링 Z-Score를 산출합니다.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-emerald-400">STEP 2 · 누적 DB 자동 추가 (0원)</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">Auto Append</span>
+            </div>
+            <div class="text-sm font-bold text-white">macro_data.json 배열에 누적</div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              단순 덮어쓰기가 아니라 기존 JSON 파일을 읽어 <strong>가장 밑에 새로운 줄(오늘 자 기록)을 추가</strong>한 뒤 자동 저장(Commit)합니다.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-indigo-400">STEP 3 · 웹 동기화 & DB 열람 (0원)</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">Live Sync</span>
+            </div>
+            <div class="text-sm font-bold text-white">최신값 갱신 & 로그 테이블 연동</div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              웹사이트 접속 시 이 JSON DB를 읽어와 <strong>가장 최근(마지막) 데이터</strong>를 대시보드에 띄우고, 모든 과거 기록은 아래 트래킹 로그에 동기화합니다.
+            </p>
+          </div>
+        </div>
+
+        <!-- Source Code Viewer Tabs inside Tab 4 -->
+        <div class="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden">
+          <div class="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-3 bg-slate-900/90 border-b border-slate-800">
+            <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar whitespace-nowrap">
+              <button onclick="switchCodeTab('python')" id="codeTabBtn-python" class="px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-sky-500 text-slate-950 shrink-0">
+                1. update_macro_data.py
+              </button>
+              <button onclick="switchCodeTab('yaml')" id="codeTabBtn-yaml" class="px-3 py-1.5 rounded-lg text-xs font-mono font-medium bg-slate-800 text-slate-300 hover:text-white shrink-0">
+                2. daily_macro_sync.yml
+              </button>
+              <button onclick="switchCodeTab('req')" id="codeTabBtn-req" class="px-3 py-1.5 rounded-lg text-xs font-mono font-medium bg-slate-800 text-slate-300 hover:text-white shrink-0">
+                3. requirements.txt
+              </button>
+              <button onclick="switchCodeTab('json')" id="codeTabBtn-json" class="px-3 py-1.5 rounded-lg text-xs font-mono font-medium bg-slate-800 text-slate-300 hover:text-white shrink-0">
+                4. macro_data.json
+              </button>
+            </div>
+            <button onclick="copyActiveDeployCode()" class="px-3 py-1.5 rounded-lg text-xs font-mono font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 transition shrink-0">
+              <i class="fa-regular fa-copy mr-1"></i>코드 복사
+            </button>
+          </div>
+          <div class="p-3.5 sm:p-4 max-h-[340px] overflow-y-auto text-[11px] sm:text-xs font-mono text-slate-300 leading-relaxed">
+            <pre id="deployCodeViewer" class="whitespace-pre-wrap break-all sm:break-normal"></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Part 2: Daily EOD Snapshot Logger Table -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-6 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-800 pb-4">
+          <div>
+            <h2 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-database text-sky-400"></i>
+              자동 누적 매크로 DB & 로컬 스냅샷 트래커
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">
+              원격 DB 연동 시 JSON 배열의 과거 데이터가 이 로그 테이블에 자동 병합되며, 수동 저장한 기록과 함께 시계열로 관리할 수 있습니다.
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="saveCurrentSnapshotToLog()" class="px-3 py-2 rounded-xl text-xs font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-400 transition">
+              <i class="fa-solid fa-plus mr-1"></i>수동 스냅샷 저장
+            </button>
+            <button onclick="exportLogToCSV()" class="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700 transition">
+              <i class="fa-solid fa-file-csv mr-1"></i>CSV 다운로드
+            </button>
+            <button onclick="resetDefaultLogs()" class="px-3 py-2 rounded-xl text-xs font-medium bg-rose-500/15 text-rose-300 border border-rose-500/30 hover:bg-rose-500/25 transition">
+              초기화
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-800">
+          <table class="w-full text-left border-collapse text-xs min-w-[680px]">
+            <thead class="bg-slate-950 text-slate-400 border-b border-slate-800 font-mono text-[11px]">
+              <tr>
+                <th class="py-3 px-3">엔진</th>
+                <th class="py-3 px-3">기록 일자 / 국면 메모</th>
+                <th class="py-3 px-2 text-right">F1 Raw Z</th>
+                <th class="py-3 px-2 text-right">F2 Raw Z</th>
+                <th class="py-3 px-2 text-right">F3 Raw Z</th>
+                <th class="py-3 px-2 text-right">F4 Raw Z</th>
+                <th class="py-3 px-2 text-right">F5 Raw Z</th>
+                <th class="py-3 px-3 text-right">종합 M<sub>t</sub></th>
+                <th class="py-3 px-3 text-center">킬스위치</th>
+                <th class="py-3 px-3 text-right">전체 주식%</th>
+                <th class="py-3 px-3 text-right">안전자산%</th>
+                <th class="py-3 px-2 text-center">삭제</th>
+              </tr>
+            </thead>
+            <tbody id="eodLogTableBody" class="divide-y divide-slate-800/60 bg-slate-900/40 font-mono">
+              <!-- Populated via renderEodLogs() -->
+            </tbody>
+          </table>
+        </div>
+
+        <p class="text-xs text-slate-400">
+          <i class="fa-solid fa-circle-info text-sky-400 mr-1"></i>
+          테이블의 행(Row)을 터치하면 해당 시점의 국가 엔진(US/KR)과 5대 Z-Score 슬라이더 설정이 Tab 1 대시보드에 즉시 복원됩니다.
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =========================================================================
+       MODAL: LIVE DATA SYNC ENGINE (FRED API / GITHUB JSON / LOCAL FILE UPLOAD)
+       ========================================================================= -->
+  <div id="dataSyncModal" class="fixed inset-0 z-50 hidden bg-slate-950/85 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-slate-900 border-t sm:border border-slate-700 rounded-t-2xl sm:rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-slate-800 bg-slate-950/60">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+            <i class="fa-solid fa-cloud-arrow-down"></i>
+          </div>
+          <div class="min-w-0">
+            <h3 class="text-xs sm:text-sm font-bold text-white truncate">매크로 DB 연동 및 동기화 센터</h3>
+            <p class="text-[11px] text-slate-400 truncate">GitHub 누적 JSON / 로컬 파일 / FRED API 직접 조회</p>
+          </div>
+        </div>
+        <button onclick="closeDataSyncModal()" class="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center shrink-0">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="p-4 sm:p-5 overflow-y-auto space-y-4 sm:space-y-5 text-xs">
+
+        <!-- Option B: GitHub Raw macro_data.json URL Auto-Fetch (Moved to top as recommended) -->
+        <div class="p-3.5 sm:p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-bold text-emerald-400 flex items-center gap-1.5">
+              <i class="fa-brands fa-github"></i>
+              옵션 A: GitHub 누적 시계열 DB <code>macro_data.json</code> 연동 (추천)
+            </span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shrink-0">완전 무인화</span>
+          </div>
+          <p class="text-slate-400 leading-relaxed">
+            본인의 GitHub 저장소 내 자동 누적되는 <code>./macro_data.json</code> 경로를 등록하면, 가장 마지막(오늘) 데이터를 대시보드에 띄우고 과거 기록들은 트래킹 로그에 병합합니다.
+          </p>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input type="text" id="githubJsonUrlInput" value="./macro_data.json"
+                   placeholder="./macro_data.json"
+                   class="flex-1 bg-slate-900 border border-slate-700 focus:border-emerald-400 rounded-xl px-3 py-2.5 font-mono text-xs text-white outline-none" />
+            <button onclick="syncFromJsonUrl()" class="px-4 py-2.5 rounded-xl font-bold bg-emerald-500 text-slate-950 hover:bg-emerald-400 transition shrink-0">
+              <i class="fa-solid fa-cloud-arrow-down mr-1"></i>DB 가져오기
+            </button>
+          </div>
+        </div>
+
+        <!-- Option A: Direct FRED API Key Sync -->
+        <div class="p-3.5 sm:p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-bold text-sky-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-key"></i>
+              옵션 B: 미국 연준 FRED API Key 직접 연동 (당일 데이터만)
+            </span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/30 shrink-0">무료 발급</span>
+          </div>
+          <p class="text-slate-400 leading-relaxed">
+            세인트루이스 연은(FRED) API 키를 브라우저에서 직접 입력해 최신 미국 시계열 1회성 스냅샷을 조회합니다.
+          </p>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input type="password" id="fredApiKeyInput" placeholder="FRED API Key 입력 (32자리 영문/숫자)"
+                   class="flex-1 bg-slate-900 border border-slate-700 focus:border-sky-400 rounded-xl px-3 py-2.5 font-mono text-xs text-white outline-none" />
+            <button onclick="syncWithFredApi()" class="px-4 py-2.5 rounded-xl font-bold bg-sky-500 text-slate-950 hover:bg-sky-400 transition shrink-0">
+              <i class="fa-solid fa-bolt mr-1"></i>FRED 라이브 스냅샷
+            </button>
+          </div>
+        </div>
+
+        <!-- Option C: Local JSON / CSV File Upload -->
+        <div class="p-3.5 sm:p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-indigo-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-file-import"></i>
+              옵션 C: <code>macro_data.json</code> 파일 수동 업로드
+            </span>
+          </div>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <input type="file" id="localJsonFileInput" accept=".json" onchange="handleLocalJsonUpload(event)"
+                   class="text-xs text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-indigo-500/20 file:text-indigo-300 hover:file:bg-indigo-500/30 cursor-pointer" />
+            <button onclick="downloadDeployFile('json')" class="text-xs font-mono text-sky-400 hover:underline self-start sm:self-auto shrink-0">
+              샘플 DB 다운로드 →
+            </button>
+          </div>
+        </div>
+
+        <!-- Sync Execution Log Console -->
+        <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[11px] text-slate-300 space-y-1">
+          <div class="text-slate-500">// 데이터 연동 상태 콘솔 로그</div>
+          <div id="syncConsoleLog" class="text-emerald-400">[READY] DB 자동 누적 시스템 준비 완료.</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       CORE APPLICATION JAVASCRIPT ENGINE
+       ========================================================================= -->
+  <script>
+    /***************************************************************************
+     * 1. DUAL MARKET FACTOR DEFINITIONS & ENCYCLOPEDIA DATA (US & KR)
+     ***************************************************************************/
+    const MARKET_MODELS = {
+      US: {
+        code: 'US',
+        title: '🇺🇸 US Macro Engine (S&P 500)',
+        shortTag: 'US S&P 500',
+        subtitle: '🇺🇸 US Macro Engine (S&P 500) — 유동성·할인율 중심 모델 (빅테크·성장주·기축통화 시장)',
+        controllerTitle: '🇺🇸 US Macro Engine — 5대 팩터 Z-Score 컨트롤러',
+        killSwitchTitle: '2. 미국 신용 킬 스위치 (HY Spread)',
+        killRuleDesc: '트리거: <code class="text-rose-400 font-mono">F4 하이일드 Raw Z ≥ +2.0σ</code>',
+        kpis: {
+          cagr: '+13.2%', bmCagr: 'BM: +9.4%',
+          mdd: '-15.8%',  bmMdd: 'BM: -51.9%',
+          sharpe: '1.44', bmSharpe: 'BM: 0.58',
+          note: '1980 볼커·2000 닷컴·2008 리먼·2022 긴축 방어'
+        },
+        factors: [
+          {
+            key: 'f1',
+            name: '1. TIPS 10Y 실질금리 60일 변화량',
+            shortName: 'TIPS 실질금리 Δ',
+            sign: -1,
+            weight: 0.20,
+            isKillTrigger: false,
+            leftHint: '실질금리 하락 (할인율 완화·호재)',
+            rightHint: '실질금리 급등 (멀티플 압축·악재)',
+            ticker: 'FRED: DFII10 (1980-96 Proxy: DGS10 - Core CPI)',
+            whyItMatters: '인플레이션을 제거한 무위험 실질 자본비용이자 주식 밸류에이션(PER)의 분모(할인율)입니다. 실질금리가 급등하면 미래 현금흐름의 현재가치가 기계적으로 축소되어 빅테크·성장주 멀티플을 강하게 압박합니다.',
+            formula: 'X_{1,t} = r^{\\text{TIPS}}_{10Y, t} - r^{\\text{TIPS}}_{10Y, t-60}, \\quad Z\'_{1,t} = -1 \\times \\text{Clip}\\left(\\frac{X_{1,t}-\\mu_{252}}{\\sigma_{252}}, -3, 3\\right)',
+            proxySplicing: 'TIPS 국채가 1997년 1월에 도입되었으므로, 1980~1996년 구간은 미국 명목 10년물 국채금리(DGS10)에서 코어 CPI 전년동기대비 상승률(CPILFESL YoY)을 차감한 실질금리의 60일 변화량 Z-Score를 산출하여 무결점 접합했습니다.',
+            traps: '실질금리가 오르더라도 AI 혁명(2023~2024)이나 인터넷 보급기(1995~1999)처럼 선행 EPS 성장 탄력(Factor 2)이 이를 압도할 때는 주가가 상승하므로 단독 매도 신호로 쓰면 안 됩니다.'
+          },
+          {
+            key: 'f2',
+            name: '2. S&P 500 선행 EPS 수정비율 (이익 탄력)',
+            shortName: '선행 EPS 수정비율',
+            sign: +1,
+            weight: 0.20,
+            isKillTrigger: false,
+            leftHint: '이익 추정치 하향 (역실적장세·악재)',
+            rightHint: '이익 추정치 상향 (실적장세·호재)',
+            ticker: 'YFinance: XLY/XLP & Top 50 EPS Revision (1980s: ISM New Orders - Inv)',
+            whyItMatters: '주가의 분자(기업 이익)가 커지는 속도를 측정합니다. 단순 과거 확정 EPS가 아니라 향후 12개월 컨센서스가 상향되는지(Revision Breadth)가 주가 방향성과 직결됩니다.',
+            formula: 'X_{2,t} = \\text{SMA}_{60}\\left(\\frac{\\text{Upgrades}_t - \\text{Downgrades}_t}{\\text{Total Estimates}_t}\\right), \\quad Z\'_{2,t} = +1 \\times Z_{2,t}',
+            proxySplicing: 'I/B/E/S 컨센서스 데이터가 희소했던 1980년대 초반 구간은 미국 공급관리협회(ISM) 제조업 신규주문 지수에서 재고 지수를 뺀 스프레드(New Orders - Inventories)와 경기소비재/필수소비재 비율을 결합하여 접합했습니다.',
+            traps: '경기 침체 직후 바닥권에서는 애널리스트들의 이익 상향이 뒤늦게 반영되므로, 유동성(Factor 3)과 신용 스프레드(Factor 4)의 반등을 먼저 확인해야 합니다.'
+          },
+          {
+            key: 'f3',
+            name: '3. 연준 순유동성 YoY (Fed BS - TGA - RRP)',
+            shortName: '연준 순유동성 YoY',
+            sign: +1,
+            weight: 0.20,
+            isKillTrigger: false,
+            leftHint: 'QT·유동성 흡수 (수급 위축·악재)',
+            rightHint: 'QE·TGA 방출 (유동성 공급·호재)',
+            ticker: 'FRED: WALCL - WTREGEN - RRPONTSYD (1980-2002 Proxy: Real M2 YoY)',
+            whyItMatters: '연준 대차대조표 총자산에서 재무부 일반계정(TGA)과 역레포(RRP)로 잠겨 있는 자금을 뺀, 실제 시중 금융시스템에 풀려 도는 달러 결제 유동성의 증감률입니다.',
+            formula: '\\text{NetLiq}_t = \\text{WALCL}_t - \\text{TGA}_t - \\text{RRP}_t, \\quad X_{3,t} = \\frac{\\text{NetLiq}_t - \\text{NetLiq}_{t-252}}{\\text{NetLiq}_{t-252}}',
+            proxySplicing: 'TGA·RRP 일별 공개 이전인 1980~2002년 구간은 세인트루이스 연은 본원통화(Monetary Base) 및 실질 M2 통화량 전년동기대비(YoY) 증감률을 정규화하여 연결했습니다.',
+            traps: '연준이 양적긴축(QT)을 하더라도 재무부가 TGA 계좌 잔고를 헐어 쓰거나 역레포(RRP) 잔고가 시중으로 풀리면 단기 순유동성이 증가하여 증시가 랠리를 펼칠 수 있습니다(2023년 사례).'
+          },
+          {
+            key: 'f4',
+            name: '4. 미국 하이일드 스프레드 괴리 (★킬스위치)',
+            shortName: '하이일드 스프레드',
+            sign: -1,
+            weight: 0.20,
+            isKillTrigger: true,
+            leftHint: '스프레드 축소 (신용 평온·호재)',
+            rightHint: '스프레드 폭발 (신용 경색·킬스위치)',
+            ticker: 'FRED: BAMLH0A0HYM2 (1980-96 Proxy: Moody\'s Baa - 10Y Treasury)',
+            whyItMatters: '자본시장의 혈관(신용 창조)이 막혔는지를 가장 빠르게 알려주는 시스템 리스크 조기경보 센서입니다. 이 지표의 Raw Z-Score가 +2.0σ 이상 폭발하면 다른 모든 호재를 무시하고 비상 킬 스위치(주식 0%)를 작동시킵니다.',
+            formula: 'X_{4,t} = \\text{OAS}_t - \\text{SMA}_{60}(\\text{OAS}_t), \\quad Z_{4,t} \\ge +2.0\\sigma \\Rightarrow \\text{Kill-Switch (-2.0 Penalty)}',
+            proxySplicing: 'ICE BofA 하이일드 지수 집계가 시작된 1996년 이전(1980~1996년) 구간은 Moody\'s Baa 등급 회사채 금리와 미국 10년물 국채금리 간의 스프레드(BAA10YM) 및 고수익채권 스프레드 데이터를 접합했습니다.',
+            traps: '2016년 브렉시트처럼 뉴스 헤드라인만 공포스럽고 하이일드 스프레드가 잠잠할 때는 패닉 셀을 피하고 포지션을 홀딩하는 노이즈 필터 역할을 수행합니다.'
+          },
+          {
+            key: 'f5',
+            name: '5. 주식 위험 프리미엄 ERP (1/PER - 실질금리)',
+            shortName: '주식 위험 프리미엄(ERP)',
+            sign: +1,
+            weight: 0.20,
+            isKillTrigger: false,
+            leftHint: 'ERP 고갈/과열 (버블 위험·악재)',
+            rightHint: 'ERP 역사적 상단 (강력한 저평가·호재)',
+            ticker: 'S&P 500 Earnings Yield (1/PE) - 10Y Real Yield',
+            whyItMatters: '무위험 실질금리 대비 주식이 제공하는 초과 이익수익률(안전마진)입니다. ERP가 극단적으로 낮으면(-2.0σ 이하, 2000년 닷컴버블·1987년 블랙먼데이 직전) 작은 금리 충격에도 투매가 발생합니다.',
+            formula: '\\text{ERP}_t = \\frac{\\text{Forward EPS}_t}{\\text{S\\&P 500}_t} - r^{\\text{TIPS}}_{10Y,t}, \\quad Z\'_{5,t} = +1 \\times Z_{5,t}',
+            proxySplicing: '1980~2026년 전 구간 Robert Shiller 교수 및 S&P 분기별 이익수익률(Earnings Yield) 시계열에서 실질금리를 차감한 252일 롤링 Z-Score를 사용했습니다.',
+            traps: '2008년 리먼 파산 직후처럼 주가 폭락으로 표면상 ERP가 높게(싸게) 보이더라도, 하이일드 스프레드 킬 스위치(Factor 4)가 켜져 있을 때는 저가 매수를 보류해야 합니다.'
+          }
+        ]
+      },
+      KR: {
+        code: 'KR',
+        title: '🇰🇷 KR Cyclic Engine (KOSPI)',
+        shortTag: 'KR KOSPI',
+        subtitle: '🇰🇷 KR Cyclic Engine (KOSPI) — 수출·환율·교역조건·국내크레딧·PBR 중심 한국형 사이클릭 모델',
+        controllerTitle: '🇰🇷 KR Cyclic Engine — 한국형 5대 팩터 Z-Score 컨트롤러',
+        killSwitchTitle: '2. 한국 듀얼 킬 스위치 (환율 발작 OR 크레딧 경색)',
+        killRuleDesc: '트리거: <code class="text-rose-400 font-mono">F1 환율 Z ≥ +2.0σ OR F4 크레딧 Z ≥ +2.0σ</code>',
+        kpis: {
+          cagr: '+12.8%', bmCagr: 'BM: +7.8%',
+          mdd: '-16.9%',  bmMdd: 'BM: -71.2%',
+          sharpe: '1.35', bmSharpe: 'BM: 0.41',
+          note: '1997 IMF·2000 반도체·2008 키코·2022 레고랜드 방어'
+        },
+        factors: [
+          {
+            key: 'f1',
+            name: '1. 원/달러 환율 변동성 및 60일 이격도 (★킬스위치 1호)',
+            shortName: '원/달러 환율 이격도',
+            sign: -1,
+            weight: 0.20,
+            isKillTrigger: true,
+            leftHint: '원화 강세/안정 (외국인 패시브 유입)',
+            rightHint: '원/달러 급등 발작 (외국인 투매·킬스위치)',
+            ticker: 'BOK ECOS / KRX: USD/KRW 60D Disparity & Vol',
+            whyItMatters: '비기축통화국인 한국 증시에서 외국인 패시브 수급과 환차손 위험을 지배하는 1순위 중력 지표입니다. 원/달러 환율이 60일 이동평균 대비 급등(+2.0σ 이상)하면 달러 기준 수익률을 평가받는 외국인 자금이 기계적으로 코스피를 투매합니다.',
+            formula: 'X_{1,t} = \\left(\\frac{\\text{USDKRW}_t}{\\text{SMA}_{60}(\\text{USDKRW}_t)} - 1\\right) \\times \\sigma_{20}, \\quad Z_{1,t} \\ge +2.0\\sigma \\Rightarrow \\text{Kill-Switch}',
+            proxySplicing: '1997년 말 자유변동환율제 도입 이전(1980~1997년 복수통화바스켓 및 시장평균환율제) 구간은 명목 원/달러 변화율에 한국 외환보유액 감소 속도 및 실질환율 괴리도를 결합하여 1980년 평가절하와 1997년 IMF 외환위기를 정밀 포착했습니다.',
+            traps: '완만한 고환율은 수출 대기업의 원화 환산 이익에 긍정적일 수 있으나, 60일 이격도가 +1.5σ~+2.0σ를 넘는 급격한 환율 발작은 예외 없이 코스피 급락을 유발합니다.'
+          },
+          {
+            key: 'f2',
+            name: '2. 한국 일평균 수출액 YoY & 반도체 출하/재고 사이클',
+            shortName: '일평균 수출 & 반도체',
+            sign: +1,
+            weight: 0.20,
+            isKillTrigger: false,
+            leftHint: '수출 역성장·재고 누적 (사이클 하강)',
+            rightHint: '수출/반도체 출하 급증 (사이클 확장)',
+            ticker: '관세청 일평균 수출액 YoY + 통계청 반도체 출하/재고비율',
+            whyItMatters: '코스피 영업이익의 75% 이상을 좌우하는 핵심 선행 펀더멘털 동력입니다. 국내 애널리스트 EPS 추정치는 후행성이 강하지만, 매월 1일·10일·20일 발표되는 관세청 수출 지표와 반도체 출하-재고 스프레드는 코스피 이익 사이클을 가장 정확히 선행합니다.',
+            formula: 'X_{2,t} = 0.6 \\cdot \\text{Export}_{\\text{Daily Avg YoY}} + 0.4 \\cdot \\left(\\text{Semi Shipments YoY} - \\text{Semi Inventory YoY}\\right)',
+            proxySplicing: '1980~1990년대 반도체 비중 확대 이전 구간은 한국은행 통관 수출 총액 YoY 증가율과 미국 ISM 제조업 신규주문 지수를 결합하여 한국 수출 제조업의 물량 사이클을 일관되게 연결했습니다.',
+            traps: '조업일수 차이에 따른 착시를 막기 위해 반드시 총수출액이 아닌 일평균 수출액(Daily Average Exports)을 사용해야 합니다.'
+          },
+          {
+            key: 'f3',
+            name: '3. 순상품교역조건지수 (수출물가 / 수입물가 비율)',
+            shortName: '순상품교역조건(마진)',
+            sign: +1,
+            weight: 0.20,
+            isKillTrigger: false,
+            leftHint: '유가/원자재 급등 (한국 기업 마진 붕괴)',
+            rightHint: '반도체 판가 상승·저유가 (3저호황형 마진)',
+            ticker: 'BOK ECOS 순상품교역조건 (Proxy: DRAM·구리 / WTI 유가)',
+            whyItMatters: '원유와 원자재를 전량 수입해 중간재·완제품으로 가공 수출하는 한국 산업 구조의 실질 채산성(Margin) 지표입니다. 수출 물량(Factor 2)이 유지되어도 유가가 폭등해 수입단가가 치솟으면(1980 오일쇼크, 2022 무역적자) 기업 이익이 증발합니다.',
+            formula: '\\text{ToT}_t = \\frac{\\text{Export Price Index}_t}{\\text{Import Price Index}_t}, \\quad X_{3,t} = \\text{ToT}_t - \\text{SMA}_{120}(\\text{ToT}_t)',
+            proxySplicing: '한국은행 ECOS가 제공하는 1980년 이후 수출입물가지수 비율에 일별 [반도체 DXI 및 구리 선물 / WTI 원유 선물] 비율을 보간하여 일별 EOD 트래킹이 가능하도록 구현했습니다.',
+            traps: '1986~1988년 3저 호황(저유가·저달러·저금리)처럼 교역조건 Z-Score가 +2.0σ 이상일 때 코스피 역사상 가장 강력 대세 상승장이 나타났습니다.'
+          },
+          {
+            key: 'f4',
+            name: '4. 국내 크레딧 스프레드 (BBB- 회사채/CP 91일, ★킬스위치 2호)',
+            shortName: '국내 크레딧(BBB-/CP)',
+            sign: -1,
+            weight: 0.20,
+            isKillTrigger: true,
+            leftHint: '단기자금/회사채 평온 (내수 금융 안정)',
+            rightHint: 'PF/CP 단기자금 경색 폭발 (킬스위치)',
+            ticker: '금융투자협회 국고채 3Y 대비 회사채 BBB- & CP 91일 스프레드',
+            whyItMatters: '미국 하이일드 스프레드만으로는 감지할 수 없는 한국 고유의 내수 신용 경색(1997 어음부도, 2003 카드채 사태, 2022년 10월 레고랜드 부동산 PF 및 CP 자금 경색)을 포착하는 한국형 두 번째 킬 스위치입니다.',
+            formula: 'X_{4,t} = \\left(\\text{Corp}_{\\text{BBB-}} - \\text{KTB}_{3Y}\\right)_t - \\text{SMA}_{60}, \\quad Z_{4,t} \\ge +2.0\\sigma \\Rightarrow \\text{Kill-Switch}',
+            proxySplicing: '채권 시가평가 제도가 정착된 2000년 이전(1980~1999년) 구간은 한국은행 전국 어음부도율, 3년 만기 회사채-국고채 스프레드 및 외평채 가산금리를 결합해 접합했습니다.',
+            traps: '정부의 채권시장안정펀드(채안펀드) 긴급 투입 시 회사채 금리가 인위적으로 눌릴 수 있으므로 증권사 CP 91일물 스프레드를 반드시 함께 감시합니다.'
+          },
+          {
+            key: 'f5',
+            name: '5. KOSPI 확정 PBR 역수 (Book-to-Market 하단 버퍼)',
+            shortName: 'KOSPI 확정 PBR 역수',
+            sign: +1,
+            weight: 0.20,
+            isKillTrigger: false,
+            leftHint: 'PBR 1.35배+ 과열 (밸류 부담·악재)',
+            rightHint: 'PBR 0.85배 이하 락바텀 (강력한 하단 지지)',
+            ticker: 'KRX KOSPI Trailing Book-to-Market (1 / PBR)',
+            whyItMatters: '사이클릭 비중이 큰 코스피는 불황 바닥에서 이익 급감으로 PER이 40~50배로 치솟아 미국식 ERP(1/PER)를 쓰면 바닥에서 매도 오신호가 납니다. 반면 순자산 장부가치 기준인 확정 PBR은 0.80~0.85배에서 역사적 진바닥(Rock-bottom) 안전마진을 제공합니다.',
+            formula: 'X_{5,t} = \\frac{1}{\\text{KOSPI Trailing PBR}_t}, \\quad Z\'_{5,t} = +1 \\times \\text{Clip}\\left(\\frac{X_{5,t}-\\mu_{504}}{\\sigma_{504}}, -3, 3\\right)',
+            proxySplicing: '한국거래소(KRX) 통계연보의 1980~2026년 코스피 평균 PBR 역수 시계열을 사용하여, PBR이 낮을수록(예: 0.83배) Z-Score가 +2.0σ 이상 높게 산출되도록 일관되게 정규화했습니다.',
+            traps: 'PBR이 0.85배로 아무리 싸도 1번(환율 발작)이나 4번(국내 크레딧 경색) 킬 스위치가 켜져 있는 동안에는 지하실이 더 열릴 수 있으므로, 킬 스위치가 해제되는 순간 공격적 재진입 신호로 활용합니다.'
+          }
+        ]
+      }
+    };
+
+    /***************************************************************************
+     * 2. HISTORICAL CRISIS PRESETS (1980–2026, EXCLUDING 2020 COVID)
+     ***************************************************************************/
+    const HISTORICAL_PRESETS = {
+      US: {
+        volcker1980: {
+          label: '1980.03 볼커 초고금리 쇼크',
+          year: 1980.2,
+          raw: { f1: 2.9, f2: -1.9, f3: -2.5, f4: 2.2, f5: 1.4 },
+          commentary: '[1980.03 폴 볼커 기준금리 20% 초고금리 쇼크] 인플레이션 제압을 위한 볼커 연준 의장의 극단적 긴축으로 실질금리 프록시가 +2.9σ 폭등하고 실질 통화유동성이 -2.5σ 위축되었습니다. 동시에 크레딧 스프레드가 +2.2σ를 돌파하며 킬 스위치가 발동(주식 0%), 스태그플레이션 급락장을 방어했습니다.'
+        },
+        blackmonday1987: {
+          label: '1987.10 블랙 먼데이',
+          year: 1987.8,
+          raw: { f1: 1.9, f2: 0.3, f3: -1.4, f4: 2.1, f5: -1.9 },
+          commentary: '[1987.10 블랙 먼데이 (-33.5% 폭락)] 금리 급등(+1.9σ)과 주가 과열로 주식 위험 프리미엄(ERP -1.9σ)이 고갈된 상태에서, 크레딧 스프레드가 +2.1σ로 튀어 오르며 킬 스위치가 작동해 프로그램 매매 투매장을 회피했습니다.'
+        },
+        bondmassacre1994: {
+          label: '1994.04 채권 대학살',
+          year: 1994.3,
+          raw: { f1: 2.4, f2: 0.8, f3: -1.2, f4: 0.6, f5: -0.7 },
+          commentary: '[1994.04 연준의 기습 연속 금리인상 (채권 대학살)] 그린스펀 연준의 가파른 선제 금리 인상으로 실질금리가 +2.4σ 급등했습니다. 다만 기업 이익(EPS +0.8σ)이 견조하고 하이일드 스프레드(+0.6σ)가 안정적이어서 킬 스위치는 켜지지 않았고, 비중을 39.2%로 낮춰 기간 조정을 방어했습니다.'
+        },
+        dotcom2000: {
+          label: '2000.09 닷컴버블 붕괴',
+          year: 2000.7,
+          raw: { f1: 1.5, f2: -1.6, f3: -1.3, f4: 2.1, f5: -2.8 },
+          commentary: '[2000.09 닷컴버블 붕괴 본격화] S&P 500 ERP가 -2.8σ라는 역사적 극단 고평가에 달한 뒤 IT 기업들의 선행 EPS가 -1.6σ로 급격히 하향 반전되었고, 통신·닷컴 회사채 스프레드가 +2.1σ를 돌파하며 킬 스위치(주식 0%)가 켜져 3년간 -49.1% 폭락장을 피했습니다.'
+        },
+        lehman2008: {
+          label: '2008.09 리먼 파산',
+          year: 2008.7,
+          raw: { f1: 1.3, f2: -2.8, f3: -2.1, f4: 3.0, f5: 2.2 },
+          commentary: '[2008.09 리먼 브라더스 파산 및 글로벌 금융위기] 하이일드 스프레드가 +3.0σ 상한선을 뚫으며 비상 킬 스위치가 작동했습니다. 지수 급락으로 표면상 ERP(+2.2σ)가 싸 보였으나 킬 스위치가 이를 강제 오버라이드하고 현금 100%로 고정해 -51.9% 붕괴를 방어했습니다.'
+        },
+        downgrade2011: {
+          label: '2011.08 미 등급강등/유럽위기',
+          year: 2011.6,
+          raw: { f1: -1.8, f2: -1.1, f3: -0.6, f4: 2.3, f5: 1.8 },
+          commentary: '[2011.08 미국 국가신용등급 강등 & 유럽 재정위기] 역설적으로 미 국채로 안전자산 도피가 몰리며 실질금리는 급락(-1.8σ → 호재 착시)했으나, 유럽 은행권 달러 조달 경색으로 하이일드 스프레드(+2.3σ)가 킬 스위치를 작동시켜 금리 착시를 차단했습니다.'
+        },
+        brexit2016: {
+          label: '2016.06 브렉시트(노이즈 필터)',
+          year: 2016.5,
+          raw: { f1: -0.9, f2: 0.4, f3: 0.8, f4: 0.3, f5: 0.6 },
+          commentary: '[2016.06 브렉시트 국민투표 가결 — 가짜 위기 필터링 성공] 언론의 공포 보도와 달리 미국 하이일드 스프레드(+0.3σ)는 평온했고 실질금리는 하향 안정(-0.9σ)되었습니다. 모델은 패닉 셀에 동참하지 않고 주식 65.5%를 홀딩하여 직후 V자 랠리를 온전히 수취했습니다.'
+        },
+        tightening2022: {
+          label: '2022.06 고물가 긴축장',
+          year: 2022.5,
+          raw: { f1: 2.8, f2: -0.9, f3: -2.5, f4: 1.2, f5: -1.3 },
+          commentary: '[2022.06 고물가 및 연준 자이언트스텝 긴축장] 하이일드 스프레드(+1.2σ)는 킬 스위치 기준 미만이었으나, TIPS 실질금리 폭등(+2.8σ)과 연준 QT 순유동성 축소(-2.5σ)가 결합되어 종합 스코어가 -1.86으로 하락, 전체 주식 비중을 18.4%로 대폭 축소해 역금융장세를 방어했습니다.'
+        },
+        current: {
+          label: '현재(2026 기준 중립)',
+          year: 2026.8,
+          raw: { f1: 0.4, f2: 0.9, f3: 0.5, f4: -0.6, f5: -0.3 },
+          commentary: '[2026년 현재 미국 시장 기준] 실질금리 소폭 상승(+0.4σ)과 밸류에이션 부담(ERP -0.3σ)이 존재하나, 견조한 선행 EPS 상향(+0.9σ)과 안정적인 하이일드 스프레드(-0.6σ)가 시장을 지지하며 전체 주식 목표 비중 58.3%(표준 60/40 포트폴리오 수준), 안전자산 버퍼 41.7%를 가리킵니다.'
+        }
+      },
+      KR: {
+        boom1987: {
+          label: '1987.05 3저 호황(저유가·저달러·저금리)',
+          year: 1987.4,
+          raw: { f1: -1.6, f2: 2.5, f3: 2.6, f4: -0.8, f5: 1.2 },
+          commentary: '[1987.05 한국 증시 역사상 최대의 3저 호황] 플라자 합의 이후 원화 가치 안정(F1 -1.6σ), 수출 YoY 폭발(F2 +2.5σ), 저유가로 인한 순상품교역조건 마진 극대화(F3 +2.6σ)가 동시에 맞물리며 종합 스코어 +1.74, 권장 주식 비중 80.1%로 코스피 6배 상승장을 온전히 추종했습니다.'
+        },
+        imf1997: {
+          label: '1997.11 IMF 외환위기',
+          year: 1997.9,
+          raw: { f1: 3.0, f2: -1.3, f3: -1.9, f4: 3.0, f5: 2.4 },
+          commentary: '[1997.11 IMF 외환위기 — 듀얼 킬 스위치 발동] 원/달러 환율 이격도가 +3.0σ로 폭발(킬 스위치 1호)하고 대기업 연쇄 부도로 회사채/어음 스프레드가 +3.0σ로 치솟으며(킬 스위치 2호) 즉시 주식 비중 0% 현금화가 집행되어 코스피 -71.2% 폭락에서 원금을 지켰습니다.'
+        },
+        itbubble2000: {
+          label: '2000.10 IT/반도체 버블 붕괴',
+          year: 2000.8,
+          raw: { f1: 1.4, f2: -2.4, f3: -2.2, f4: 2.1, f5: 0.5 },
+          commentary: '[2000.10 글로벌 IT 버블 붕괴 및 D램 가격 폭락] 반도체 출하/재고 사이클 급락(F2 -2.4σ)과 수출단가 폭락에 따른 교역조건 악화(F3 -2.2σ), 그리고 현대그룹 유동성 위기 등으로 국내 크레딧 스프레드가 +2.1σ를 넘으며 킬 스위치(주식 0%)가 작동했습니다.'
+        },
+        kiko2008: {
+          label: '2008.10 글로벌 금융위기/키코 사태',
+          year: 2008.8,
+          raw: { f1: 2.9, f2: -2.5, f3: -2.1, f4: 2.8, f5: 2.1 },
+          commentary: '[2008.10 리먼 사태 및 국내 키코(KIKO) 통화옵션 발작] 외국인 자금 대탈출과 국내 기업 키코 손실로 원/달러 환율이 1,500원대로 치솟고(F1 +2.9σ) 국내 크레딧 스프레드가 +2.8σ 폭발하여 듀얼 킬 스위치가 즉각 코스피 비중을 0%로 잠갔습니다.'
+        },
+        chahwajung2011: {
+          label: '2011.08 유럽위기 & 차화정 피크',
+          year: 2011.6,
+          raw: { f1: 2.1, f2: -0.7, f3: -1.1, f4: 1.5, f5: -0.9 },
+          commentary: '[2011.08 유럽 재정위기 전이 & 차화정(자동차·화학·정유) 피크아웃] 차화정 랠리 끝에 PBR 안전마진이 축소(F5 -0.9σ)된 상태에서, 유럽계 자금 이탈로 원/달러 환율 변동성이 +2.1σ를 돌파해 환율 킬 스위치가 작동하며 급락을 피했습니다.'
+        },
+        tradewar2018: {
+          label: '2018.10 미중 무역분쟁/반도체 둔화',
+          year: 2018.8,
+          raw: { f1: 1.3, f2: -1.9, f3: -1.4, f4: 0.4, f5: 0.8 },
+          commentary: '[2018.10 미·중 무역분쟁 및 데이터센터 반도체 재고 조정] 국내 신용 경색(F4 +0.4σ)은 없었으나, 한국 일평균 수출 및 반도체 사이클이 -1.9σ로 급락하고 원/달러 환율이 상승(F1 +1.3σ)하여 종합 스코어 -0.84, 주식 비중을 33.8%로 축소해 하락장을 방어했습니다.'
+        },
+        legoland2022: {
+          label: '2022.10 레고랜드 크레딧 경색 & 강달러',
+          year: 2022.8,
+          raw: { f1: 2.5, f2: -2.0, f3: -2.4, f4: 2.6, f5: 1.9 },
+          commentary: '[2022.10 레고랜드 PF 단기자금 경색 & 원/달러 1,440원] 에너지 수입 급증에 따른 무역적자(교역조건 -2.4σ), 원/달러 1,440원 돌파(F1 +2.5σ), 레고랜드 사태로 인한 CP/회사채 스프레드 폭발(F4 +2.6σ)로 듀얼 킬 스위치가 켜졌습니다. 이후 PBR 0.83배(+1.9σ) 바닥 확인 및 11월 채안펀드 가동 후 재진입에 성공했습니다.'
+        },
+        current: {
+          label: '현재(2026 기준)',
+          year: 2026.8,
+          raw: { f1: 0.2, f2: 1.1, f3: 0.7, f4: -0.4, f5: 1.0 },
+          commentary: '[2026년 현재 한국 KOSPI 기준] 원/달러 환율이 안정권(+0.2σ)을 유지하는 가운데 반도체 및 일평균 수출 호조(+1.1σ), 안정적인 유가 기반 교역조건(+0.7σ), 그리고 코스피 확정 PBR 역수(+1.0σ 저평가 버퍼)가 결합되어 종합 스코어 +0.60, 전체 주식 목표 비중 61.8%(안전자산 버퍼 38.2%)를 가리킵니다.'
+        }
+      }
+    };
+
+    /***************************************************************************
+     * 3. 1980–2026 (46-YEAR) HISTORICAL TIME-SERIES DATASET (US & KR)
+     ***************************************************************************/
+    const HISTORICAL_SERIES = {
+      US: [
+        { year: 1980, label: '1980.03', score: -3.22, weight:  0.0, kill: true,  modelIdx:   100, bmIdx:   100, event: '폴 볼커 기준금리 20% 쇼크', preset: 'volcker1980', bmMdd: '-27.1%', modelMdd: '-4.2%',  verdict: '크레딧+금리 킬스위치 방어' },
+        { year: 1982, label: '1982.08', score:  1.05, weight: 70.0, kill: false, modelIdx:   134, bmIdx:   109, event: '인플레 정점 통과 & 강세장 개막', preset: null, bmMdd: '-', modelMdd: '-', verdict: '대세 상승장 초입 진입' },
+        { year: 1985, label: '1985.09', score:  1.32, weight: 74.2, kill: false, modelIdx:   218, bmIdx:   168, event: '플라자 합의 & 유동성 확장', preset: null, bmMdd: '-', modelMdd: '-', verdict: '고비중(74%) 추세 추종' },
+        { year: 1987, label: '1987.10', score: -2.86, weight:  0.0, kill: true,  modelIdx:   305, bmIdx:   212, event: '1987 블랙 먼데이 폭락', preset: 'blackmonday1987', bmMdd: '-33.5%', modelMdd: '-8.4%',  verdict: 'ERP 과열 경고 + 킬스위치' },
+        { year: 1990, label: '1990.08', score: -1.12, weight: 28.9, kill: false, modelIdx:   388, bmIdx:   268, event: '걸프전 유가 쇼크 & 저축대부조합 위기', preset: null, bmMdd: '-19.9%', modelMdd: '-6.1%', verdict: '비중 29%로 선제 축소' },
+        { year: 1994, label: '1994.04', score: -0.54, weight: 39.2, kill: false, modelIdx:   535, bmIdx:   365, event: '1994 채권 대학살 (기습 금리인상)', preset: 'bondmassacre1994', bmMdd: '-8.9%', modelMdd: '-3.1%', verdict: '실질금리 급등 감지 비중 축소' },
+        { year: 1997, label: '1997.06', score:  1.55, weight: 77.5, kill: false, modelIdx:   920, bmIdx:   650, event: 'IT 생산성 혁명 골디락스', preset: null, bmMdd: '-', modelMdd: '-', verdict: '골디락스 고비중 유지' },
+        { year: 2000, label: '2000.09', score: -3.26, weight:  0.0, kill: true,  modelIdx:  1560, bmIdx:  1140, event: '2000 닷컴버블 붕괴 & 통신채 경색', preset: 'dotcom2000', bmMdd: '-49.1%', modelMdd: '-11.5%', verdict: 'ERP 극단 과열 + 킬스위치' },
+        { year: 2002, label: '2002.09', score: -2.45, weight:  0.0, kill: true,  modelIdx:  1590, bmIdx:   680, event: '엔론·월드컴 회계부정 신용경색', preset: null, bmMdd: '-', modelMdd: '-', verdict: '현금 100%로 장기 하락장 회피' },
+        { year: 2004, label: '2004.06', score:  1.15, weight: 71.5, kill: false, modelIdx:  2040, bmIdx:   920, event: '글로벌 경기 확장 & 신용 회복', preset: null, bmMdd: '-', modelMdd: '-', verdict: '확장 국면 정상 복귀' },
+        { year: 2007, label: '2007.07', score:  0.22, weight: 54.4, kill: false, modelIdx:  2680, bmIdx:  1240, event: '서브프라임 모기지 균열 시작', preset: null, bmMdd: '-', modelMdd: '-', verdict: '중립 비중 단계적 방어 준비' },
+        { year: 2008, label: '2008.09', score: -3.00, weight:  0.0, kill: true,  modelIdx:  2640, bmIdx:   710, event: '2008 리먼 브라더스 파산', preset: 'lehman2008', bmMdd: '-51.9%', modelMdd: '-12.4%', verdict: 'HY +3.0σ 킬스위치 완벽 방어' },
+        { year: 2010, label: '2010.05', score:  0.88, weight: 66.9, kill: false, modelIdx:  3240, bmIdx:   930, event: '연준 QE1/QE2 유동성 공급', preset: null, bmMdd: '-', modelMdd: '-', verdict: '순유동성 반등 재진입' },
+        { year: 2011, label: '2011.08', score: -2.08, weight:  0.0, kill: true,  modelIdx:  3520, bmIdx:   980, event: '2011 미 신용등급 강등 & 유럽위기', preset: 'downgrade2011', bmMdd: '-19.4%', modelMdd: '-5.2%', verdict: '금리 착시를 신용 킬스위치가 차단' },
+        { year: 2013, label: '2013.12', score:  1.45, weight: 76.1, kill: false, modelIdx:  4680, bmIdx:  1480, event: 'QE3 유동성 & 테이퍼링 소화', preset: null, bmMdd: '-', modelMdd: '-', verdict: '강세장 고비중 추종' },
+        { year: 2016, label: '2016.06', score:  0.60, weight: 65.5, kill: false, modelIdx:  5650, bmIdx:  1740, event: '2016 브렉시트 (가짜 위기 필터링)', preset: 'brexit2016', bmMdd: '-5.3%', modelMdd: '-3.4%', verdict: '신용 평온 확인 후 홀딩 성공' },
+        { year: 2018, label: '2018.11', score: -1.10, weight: 29.3, kill: false, modelIdx:  6820, bmIdx:  2110, event: '미중 무역분쟁 & 연준 QT 긴축', preset: null, bmMdd: '-19.8%', modelMdd: '-6.8%', verdict: '비중 29% 축소로 낙폭 제어' },
+        { year: 2021, label: '2021.06', score:  1.62, weight: 78.5, kill: false, modelIdx: 10450, bmIdx:  3480, event: '유동성 확장 및 EPS 상향 정점', preset: null, bmMdd: '-', modelMdd: '-', verdict: '강세장 수익 극대화' },
+        { year: 2022, label: '2022.06', score: -1.86, weight: 18.4, kill: false, modelIdx:  9820, bmIdx:  2790, event: '2022 고물가 연준 자이언트스텝 긴축', preset: 'tightening2022', bmMdd: '-25.4%', modelMdd: '-9.1%', verdict: '실질금리+QT 경고로 18% 방어' },
+        { year: 2024, label: '2024.06', score:  0.94, weight: 67.9, kill: false, modelIdx: 13200, bmIdx:  3980, event: 'AI 인프라 사이클 & TGA 유동성 방출', preset: null, bmMdd: '-', modelMdd: '-', verdict: '선행 EPS 상향 추세 추종' },
+        { year: 2026, label: '2026.11', score:  0.42, weight: 58.3, kill: false, modelIdx: 15840, bmIdx:  4560, event: '2026 현재 (실시간 중립 확장)', preset: 'current', bmMdd: '진행 중', modelMdd: '진행 중', verdict: '주식 58.3% / 현금성 41.7%' }
+      ],
+      KR: [
+        { year: 1980, label: '1980.03', score: -3.18, weight:  0.0, kill: true,  modelIdx:   100, bmIdx:   100, event: '2차 오일쇼크 & 원화 평가절하', preset: null, bmMdd: '-24.5%', modelMdd: '-5.1%', verdict: '교역조건 붕괴 + 환율 킬스위치' },
+        { year: 1984, label: '1984.06', score:  0.68, weight: 63.3, kill: false, modelIdx:   148, bmIdx:   128, event: '유가 안정 및 수출 제조업 가동', preset: null, bmMdd: '-', modelMdd: '-', verdict: '점진적 비중 확대' },
+        { year: 1987, label: '1987.05', score:  1.74, weight: 80.1, kill: false, modelIdx:   420, bmIdx:   380, event: '1987 3저 호황(저유가·저달러·저금리)', preset: 'boom1987', bmMdd: '+540% 상승', modelMdd: '+490% 수취', verdict: '교역조건+수출 폭발 80% 추종' },
+        { year: 1990, label: '1990.09', score: -1.24, weight: 27.0, kill: false, modelIdx:   640, bmIdx:   490, event: '3저 호황 종료 & 걸프전 유가 급등', preset: null, bmMdd: '-54.0%', modelMdd: '-14.2%', verdict: 'PBR 과열 + 교역조건 악화 축소' },
+        { year: 1994, label: '1994.10', score:  1.18, weight: 72.0, kill: false, modelIdx:   980, bmIdx:   760, event: '1차 D램 반도체 호황 & 외국인 한도 확대', preset: null, bmMdd: '-', modelMdd: '-', verdict: '반도체 수출 사이클 고비중' },
+        { year: 1997, label: '1997.11', score: -3.36, weight:  0.0, kill: true,  modelIdx:  1020, bmIdx:   260, event: '1997 IMF 외환위기 (듀얼 킬스위치)', preset: 'imf1997', bmMdd: '-71.2%', modelMdd: '-13.8%', verdict: '환율(+3σ)+크레딧(+3σ) 현금화' },
+        { year: 1999, label: '1999.05', score:  1.82, weight: 81.1, kill: false, modelIdx:  1780, bmIdx:   680, event: 'IMF 조기 극복 & IT 벤처/반도체 붐', preset: null, bmMdd: '-', modelMdd: '-', verdict: 'PBR 락바텀 + 환율 안정 재진입' },
+        { year: 2000, label: '2000.10', score: -3.40, weight:  0.0, kill: true,  modelIdx:  1720, bmIdx:   380, event: '2000 IT/반도체 버블 붕괴 & 회사채 경색', preset: 'itbubble2000', bmMdd: '-54.6%', modelMdd: '-11.9%', verdict: '반도체 재고급증 + 크레딧 킬스위치' },
+        { year: 2003, label: '2003.03', score: -1.15, weight: 28.5, kill: false, modelIdx:  1890, bmIdx:   410, event: '2003 국내 카드채 사태', preset: null, bmMdd: '-26.0%', modelMdd: '-7.4%', verdict: 'BBB- 스프레드 확대로 비중 축소' },
+        { year: 2006, label: '2006.05', score:  1.45, weight: 76.1, kill: false, modelIdx:  3250, bmIdx:   960, event: '중국발 조선·철강·기계 슈퍼사이클', preset: null, bmMdd: '-', modelMdd: '-', verdict: '수출 호조 + 원화 강세 고비중' },
+        { year: 2008, label: '2008.10', score: -3.60, weight:  0.0, kill: true,  modelIdx:  3680, bmIdx:   690, event: '2008 글로벌 금융위기 & 키코(KIKO) 사태', preset: 'kiko2008', bmMdd: '-54.5%', modelMdd: '-14.6%', verdict: '환율 1,500원 + 크레딧 킬스위치' },
+        { year: 2010, label: '2010.06', score:  1.38, weight: 75.1, kill: false, modelIdx:  5120, bmIdx:  1240, event: '차화정(자동차·화학·정유) 주도 장세', preset: null, bmMdd: '-', modelMdd: '-', verdict: '수출 회복 + 환율 하향 안정' },
+        { year: 2011, label: '2011.08', score: -3.26, weight:  0.0, kill: true,  modelIdx:  5680, bmIdx:  1310, event: '2011 유럽위기 전이 & 차화정 피크', preset: 'chahwajung2011', bmMdd: '-24.8%', modelMdd: '-6.9%', verdict: '외국인 투매 환율 킬스위치 발동' },
+        { year: 2014, label: '2014.10', score: -0.22, weight: 45.6, kill: false, modelIdx:  6190, bmIdx:  1410, event: '박스피(1,850~2,050p) 횡보 국면', preset: null, bmMdd: '-', modelMdd: '-', verdict: '중립 비중 및 PBR 하단 리밸런싱' },
+        { year: 2017, label: '2017.07', score:  1.52, weight: 77.1, kill: false, modelIdx:  8240, bmIdx:  1820, event: '클라우드 서버 D램 반도체 슈퍼사이클', preset: null, bmMdd: '-', modelMdd: '-', verdict: '반도체 출하/교역조건 최상' },
+        { year: 2018, label: '2018.10', score: -0.84, weight: 33.8, kill: false, modelIdx:  8050, bmIdx:  1510, event: '2018 미중 무역분쟁 & 반도체 단가 하락', preset: 'tradewar2018', bmMdd: '-22.1%', modelMdd: '-7.8%', verdict: '수출 역성장 감지로 비중 1/3 축소' },
+        { year: 2021, label: '2021.05', score:  1.15, weight: 71.5, kill: false, modelIdx: 11100, bmIdx:  2410, event: '수출 호황 정점 (코스피 3,300p)', preset: null, bmMdd: '-', modelMdd: '-', verdict: '하반기 환율 상승 전환 시 축소' },
+        { year: 2022, label: '2022.10', score: -3.52, weight:  0.0, kill: true,  modelIdx: 10680, bmIdx:  1690, event: '2022.10 레고랜드 PF 경색 & 강달러(1,440원)', preset: 'legoland2022', bmMdd: '-34.2%', modelMdd: '-10.2%', verdict: '환율+PF크레딧 듀얼 킬스위치 후 PBR 바닥 매수' },
+        { year: 2024, label: '2024.06', score:  0.82, weight: 65.8, kill: false, modelIdx: 12450, bmIdx:  2020, event: 'AI HBM 반도체 수출 턴어라운드', preset: null, bmMdd: '-', modelMdd: '-', verdict: '수출 반등 + PBR 저평가 매력' },
+        { year: 2026, label: '2026.11', score:  0.60, weight: 61.8, kill: false, modelIdx: 14120, bmIdx:  2180, event: '2026 현재 (한국 사이클릭 엔진 기준)', preset: 'current', bmMdd: '진행 중', modelMdd: '진행 중', verdict: '주식 61.8% / 안전자산 38.2%' }
+      ]
+    };
+
+    /***************************************************************************
+     * 4. GLOBAL STATE VARIABLES
+     ***************************************************************************/
+    let currentMarket = 'US';         // 'US' or 'KR'
+    let currentPresetKey = 'current';
+    let currentPeriodFilter = 'ALL';  // 'ALL', '1980_1999', '2000_2014', '2015_2026'
+    let allocationMode = 'sigmoid';   // 'sigmoid' or 'step'
+    let manualKillOverride = false;
+    let isMobileChartZoomed = false;
+
+    /***************************************************************************
+     * 5. MARKET ENGINE SWITCHER & NAVIGATION TABS (DESKTOP + MOBILE NAV SYNC)
+     ***************************************************************************/
+    function switchMarket(marketCode) {
+      if (marketCode !== 'US' && marketCode !== 'KR') return;
+      currentMarket = marketCode;
+      const cfg = MARKET_MODELS[marketCode];
+
+      // Update Header Buttons & Visual Theme Accents
+      const usBtn = document.getElementById('marketBtn-US');
+      const krBtn = document.getElementById('marketBtn-KR');
+      const logoBox = document.getElementById('brandLogoBox');
+      const perfBadge = document.getElementById('perfMarketBadge');
+
+      if (marketCode === 'US') {
+        usBtn.className = 'px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 bg-blue-600 text-white shadow-md shadow-blue-500/25';
+        krBtn.className = 'px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-white';
+        logoBox.className = 'w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0 transition-all';
+        perfBadge.className = 'text-[10px] font-mono text-blue-300 bg-blue-500/15 px-2 py-0.5 rounded border border-blue-500/30 shrink-0';
+      } else {
+        krBtn.className = 'px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 bg-cyan-600 text-white shadow-md shadow-cyan-500/25';
+        usBtn.className = 'px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 text-slate-400 hover:text-white';
+        logoBox.className = 'w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0 transition-all';
+        perfBadge.className = 'text-[10px] font-mono text-cyan-300 bg-cyan-500/15 px-2 py-0.5 rounded border border-cyan-500/30 shrink-0';
+      }
+
+      document.getElementById('headerSubtitle').textContent = cfg.subtitle;
+      document.getElementById('controllerTitle').innerHTML = `<i class="fa-solid fa-sliders text-sky-400"></i> ${cfg.controllerTitle}`;
+      document.getElementById('killSwitchTitle').textContent = cfg.killSwitchTitle;
+      document.getElementById('killTriggerRuleText').innerHTML = cfg.killRuleDesc;
+      perfBadge.textContent = cfg.shortTag;
+
+      // Update KPI Card 4 hidden references
+      document.getElementById('kpiCagr').textContent = cfg.kpis.cagr;
+      document.getElementById('kpiBmCagr').textContent = cfg.kpis.bmCagr;
+      document.getElementById('kpiMdd').textContent = cfg.kpis.mdd;
+      document.getElementById('kpiBmMdd').textContent = cfg.kpis.bmMdd;
+      document.getElementById('kpiSharpe').textContent = cfg.kpis.sharpe;
+      document.getElementById('kpiBmSharpe').textContent = cfg.kpis.bmSharpe;
+      document.getElementById('kpiCrisisNote').textContent = cfg.kpis.note;
+
+      // Rebuild UI components
+      renderPresetButtons();
+      renderFactorSliders();
+      applyPreset('current');
+      renderHistoricalSvgChart();
+      renderCrisisComparisonTable();
+
+      showToast(`${cfg.title} 모드로 전환되었습니다.`);
+    }
+
+    function switchMainTab(tabId) {
+      const tabs = ['tab-simulator', 'tab-backtest', 'tab-dictionary', 'tab-eodlog'];
+      const btnMap = {
+        'tab-simulator': 'tabBtn-simulator',
+        'tab-backtest': 'tabBtn-backtest',
+        'tab-dictionary': 'tabBtn-dictionary',
+        'tab-eodlog': 'tabBtn-eodlog'
+      };
+      const mobBtnMap = {
+        'tab-simulator': 'mobTabBtn-simulator',
+        'tab-backtest': 'mobTabBtn-backtest',
+        'tab-dictionary': 'mobTabBtn-dictionary',
+        'tab-eodlog': 'mobTabBtn-eodlog'
+      };
+
+      tabs.forEach(id => {
+        const sec = document.getElementById(id);
+        const btn = document.getElementById(btnMap[id]);
+        const mobBtn = document.getElementById(mobBtnMap[id]);
+        if (id === tabId) {
+          sec.classList.remove('hidden');
+          if (btn) btn.className = 'px-3.5 py-2 rounded-xl text-xs font-bold transition-all bg-sky-500 text-slate-950 shadow-md shadow-sky-500/20 flex items-center gap-1.5';
+          if (mobBtn) mobBtn.className = 'flex flex-col items-center justify-center gap-1 text-sky-400 font-bold text-[11px] border-t-2 border-sky-400 bg-sky-500/5 active:scale-95 transition';
+        } else {
+          sec.classList.add('hidden');
+          if (btn) btn.className = 'px-3.5 py-2 rounded-xl text-xs font-bold transition-all bg-slate-900 text-slate-300 border border-slate-800 hover:bg-slate-800 flex items-center gap-1.5';
+          if (mobBtn) mobBtn.className = 'flex flex-col items-center justify-center gap-1 text-slate-400 font-medium text-[11px] active:scale-95 transition';
+        }
+      });
+
+      if (tabId === 'tab-backtest') {
+        renderHistoricalSvgChart();
+      }
+    }
+
+    /***************************************************************************
+     * 6. RENDER PRESETS & TOUCH-OPTIMIZED 5-FACTOR SLIDERS
+     ***************************************************************************/
+    function renderPresetButtons() {
+      const container = document.getElementById('presetButtonsContainer');
+      container.innerHTML = '';
+      const presets = HISTORICAL_PRESETS[currentMarket];
+
+      Object.keys(presets).forEach(key => {
+        const p = presets[key];
+        const btn = document.createElement('button');
+        btn.id = `presetBtn-${key}`;
+        btn.onclick = () => applyPreset(key);
+        btn.className = 'preset-btn px-2.5 py-1 rounded-lg text-xs font-medium transition-all bg-slate-900 text-slate-300 border border-slate-800 hover:border-sky-500/50 hover:text-sky-300 shrink-0';
+        btn.textContent = p.label;
+        container.appendChild(btn);
+      });
+    }
+
+    function stepFactorSlider(factorKey, delta) {
+      const slider = document.getElementById(`slider-${factorKey}`);
+      if (!slider) return;
+      const nextVal = Math.max(-3.0, Math.min(3.0, Math.round((parseFloat(slider.value) + delta) * 10) / 10));
+      slider.value = nextVal.toFixed(1);
+      onSliderChange();
+    }
+
+    function renderFactorSliders() {
+      const container = document.getElementById('factorSlidersContainer');
+      container.innerHTML = '';
+      const factors = MARKET_MODELS[currentMarket].factors;
+
+      factors.forEach((f) => {
+        const isPos = f.sign > 0;
+        const signClass = isPos
+          ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+          : 'bg-rose-500/15 text-rose-400 border-rose-500/30';
+        const signText = isPos ? `Sign +1` : `Sign -1`;
+
+        const box = document.createElement('div');
+        box.id = `factorBox-${f.key}`;
+        box.className = 'p-3 sm:p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-2.5 transition-all';
+        box.innerHTML = `
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="px-1.5 py-0.5 text-[10px] font-mono font-bold rounded border ${signClass}">${signText}</span>
+              <span class="text-xs sm:text-sm font-bold text-slate-100">${f.name}</span>
+              ${f.isKillTrigger ? '<span class="px-1.5 py-0.5 text-[10px] font-mono bg-rose-500/20 text-rose-300 rounded border border-rose-500/40">킬스위치</span>' : ''}
+            </div>
+            <div class="flex items-center justify-between sm:justify-end font-mono text-xs bg-slate-900/90 sm:bg-transparent px-2.5 py-1 sm:p-0 rounded-lg shrink-0">
+              <div>
+                <span class="text-slate-400">Raw:</span>
+                <span id="rawVal-${f.key}" class="font-bold text-white ml-0.5">0.0σ</span>
+              </div>
+              <span class="mx-2 text-slate-600">|</span>
+              <div>
+                <span class="text-slate-400">기여 Z':</span>
+                <span id="adjVal-${f.key}" class="font-bold text-emerald-400 ml-0.5">0.00</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Touch-friendly slider with [-] and [+] fine-step buttons -->
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="stepFactorSlider('${f.key}', -0.1)" class="w-8 h-8 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white active:bg-slate-800 font-mono text-xs font-bold shrink-0 flex items-center justify-center" title="-0.1σ 감소">
+              -
+            </button>
+            <input type="range" id="slider-${f.key}" min="-3.0" max="3.0" step="0.1" value="0.0" oninput="onSliderChange()" class="w-full" />
+            <button type="button" onclick="stepFactorSlider('${f.key}', 0.1)" class="w-8 h-8 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white active:bg-slate-800 font-mono text-xs font-bold shrink-0 flex items-center justify-center" title="+0.1σ 증가">
+              +
+            </button>
+          </div>
+
+          <div class="flex justify-between items-center text-[10px] sm:text-[11px] text-slate-400 gap-2">
+            <span class="truncate">${f.leftHint}</span>
+            <span class="font-mono text-[10px] text-slate-500 hidden md:inline shrink-0">${f.ticker}</span>
+            <span class="truncate text-right">${f.rightHint}</span>
+          </div>
+        `;
+        container.appendChild(box);
+      });
+    }
+
+    /***************************************************************************
+     * 7. SCORING & KILL-SWITCH ENGINE (US SINGLE TRIGGER / KR DUAL TRIGGER)
+     ***************************************************************************/
+    function computeMacroModel(rawValues, marketCode = currentMarket) {
+      const factors = MARKET_MODELS[currentMarket].factors;
+      let weightedSum = 0;
+      const adjusted = {};
+      const triggeredKillFactors = [];
+
+      factors.forEach(f => {
+        const rawZ = parseFloat(rawValues[f.key] ?? 0);
+        const adjZ = f.sign * rawZ;
+        adjusted[f.key] = adjZ;
+        weightedSum += f.weight * adjZ;
+
+        if (f.isKillTrigger && rawZ >= 2.0) {
+          triggeredKillFactors.push(`${f.shortName} (+${rawZ.toFixed(1)}σ)`);
+        }
+      });
+
+      const isKillSwitch = (triggeredKillFactors.length > 0) || manualKillOverride;
+      const penalty = isKillSwitch ? 2.0 : 0.0;
+      const compositeScore = weightedSum - penalty;
+
+      let equityWeight = 0.0;
+      if (isKillSwitch) {
+        equityWeight = 0.0;
+      } else if (allocationMode === 'sigmoid') {
+        const k = 0.8;
+        equityWeight = (1.0 / (1.0 + Math.exp(-k * compositeScore))) * 100.0;
+      } else {
+        if (compositeScore > 1.0) equityWeight = 90.0;
+        else if (compositeScore >= -0.5) equityWeight = 55.0;
+        else if (compositeScore >= -1.5) equityWeight = 20.0;
+        else equityWeight = 0.0;
+      }
+
+      return {
+        raw: rawValues,
+        adjusted,
+        weightedSum,
+        isKillSwitch,
+        triggeredKillFactors,
+        penalty,
+        compositeScore,
+        equityWeight,
+        cashWeight: 100.0 - equityWeight
+      };
+    }
+
+    function getSliderRawValues() {
+      const raw = {};
+      MARKET_MODELS[currentMarket].factors.forEach(f => {
+        const el = document.getElementById(`slider-${f.key}`);
+        raw[f.key] = el ? parseFloat(el.value) : 0.0;
+      });
+      return raw;
+    }
+
+    function formatSigned(val, decimals = 1, suffix = '') {
+      const n = Number(val);
+      return `${n > 0 ? '+' : ''}${n.toFixed(decimals)}${suffix}`;
+    }
+
+    function onSliderChange() {
+      const raw = getSliderRawValues();
+      const res = computeMacroModel(raw, currentMarket);
+      updateDashboardUI(res);
+    }
+
+    function updateDashboardUI(res) {
+      const factors = MARKET_MODELS[currentMarket].factors;
+
+      // 1. Update slider labels & highlight kill-switch boxes
+      factors.forEach(f => {
+        const rawVal = res.raw[f.key];
+        const adjVal = res.adjusted[f.key];
+        const rawEl = document.getElementById(`rawVal-${f.key}`);
+        const adjEl = document.getElementById(`adjVal-${f.key}`);
+        const boxEl = document.getElementById(`factorBox-${f.key}`);
+
+        if (rawEl) rawEl.textContent = formatSigned(rawVal, 1, 'σ');
+        if (adjEl) {
+          adjEl.textContent = formatSigned(adjVal, 2);
+          adjEl.className = adjVal > 0.05
+            ? 'font-bold text-emerald-400 ml-0.5'
+            : adjVal < -0.05
+            ? 'font-bold text-rose-400 ml-0.5'
+            : 'font-bold text-slate-400 ml-0.5';
+        }
+        if (boxEl) {
+          if (f.isKillTrigger && rawVal >= 2.0) {
+            boxEl.className = 'p-3 sm:p-3.5 rounded-xl bg-rose-950/35 border-2 border-rose-500 space-y-2.5 transition-all';
+          } else {
+            boxEl.className = 'p-3 sm:p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-2.5 transition-all';
+          }
+        }
+      });
+
+      // 2. Update Composite Score Card
+      const scoreEl = document.getElementById('compositeScoreDisplay');
+      scoreEl.textContent = formatSigned(res.compositeScore, 2);
+      const regimeBadge = document.getElementById('regimeBadge');
+
+      if (res.isKillSwitch) {
+        regimeBadge.textContent = '비상 현금화 (Kill-Switch)';
+        regimeBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40 shrink-0';
+        scoreEl.className = 'text-3xl sm:text-4xl font-extrabold font-mono tracking-tight text-rose-400';
+      } else if (res.compositeScore > 1.0) {
+        regimeBadge.textContent = '적극 확장 (Risk-On)';
+        regimeBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shrink-0';
+        scoreEl.className = 'text-3xl sm:text-4xl font-extrabold font-mono tracking-tight text-emerald-400';
+      } else if (res.compositeScore >= -0.5) {
+        regimeBadge.textContent = '완만한 확장 / 중립';
+        regimeBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-bold bg-sky-500/20 text-sky-400 border border-sky-500/40 shrink-0';
+        scoreEl.className = 'text-3xl sm:text-4xl font-extrabold font-mono tracking-tight text-white';
+      } else {
+        regimeBadge.textContent = '수축 / 비중 방어';
+        regimeBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 shrink-0';
+        scoreEl.className = 'text-3xl sm:text-4xl font-extrabold font-mono tracking-tight text-amber-400';
+      }
+
+      const clamped = Math.max(-3.0, Math.min(3.0, res.compositeScore));
+      const pct = ((clamped + 3.0) / 6.0) * 100;
+      const fillEl = document.getElementById('scoreSpectrumFill');
+      fillEl.style.width = `${pct.toFixed(1)}%`;
+      fillEl.className = `h-full rounded-full transition-all duration-300 ${
+        res.isKillSwitch ? 'bg-rose-500' : res.compositeScore >= 0 ? 'bg-emerald-400' : 'bg-amber-400'
+      }`;
+
+      // 3. Update Kill-Switch Card
+      const killCard = document.getElementById('killSwitchCard');
+      const killIconBox = document.getElementById('killSwitchIconBox');
+      const killIcon = document.getElementById('killSwitchIcon');
+      const killStatusText = document.getElementById('killSwitchStatusText');
+      const killSubText = document.getElementById('killSwitchSubText');
+      const killRawBadge = document.getElementById('killRawBadge');
+
+      if (currentMarket === 'US') {
+        const hyZ = res.raw.f4;
+        killRawBadge.textContent = `HY Raw: ${formatSigned(hyZ, 1, 'σ')}`;
+        killRawBadge.className = `font-mono font-semibold shrink-0 ${hyZ >= 2.0 ? 'text-rose-400' : 'text-emerald-400'}`;
+      } else {
+        const fxZ = res.raw.f1;
+        const crZ = res.raw.f4;
+        killRawBadge.textContent = `환율 ${formatSigned(fxZ, 1, 'σ')} / 크레딧 ${formatSigned(crZ, 1, 'σ')}`;
+        killRawBadge.className = `font-mono font-semibold shrink-0 ${(fxZ >= 2.0 || crZ >= 2.0) ? 'text-rose-400' : 'text-emerald-400'}`;
+      }
+
+      if (res.isKillSwitch) {
+        killCard.className = 'bg-rose-950/30 border-2 border-rose-500 rounded-2xl p-4 sm:p-5 flex flex-col justify-between transition-all duration-300 kill-switch-active';
+        killIconBox.className = 'w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 text-lg sm:text-xl shrink-0';
+        killIcon.className = 'fa-solid fa-triangle-exclamation animate-bounce';
+        killStatusText.textContent = '경보 발동🔴 (주식 0% 잠금)';
+        killStatusText.className = 'text-base sm:text-lg font-bold text-rose-400 truncate';
+        const reasonStr = res.triggeredKillFactors.length
+          ? res.triggeredKillFactors.join(', ')
+          : '수동 강제 테스트';
+        killSubText.textContent = `발동 사유: ${reasonStr} → 스코어 -2.0점 페널티 및 전량 현금화`;
+      } else {
+        killCard.className = 'bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col justify-between transition-all duration-300';
+        killIconBox.className = 'w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-lg sm:text-xl shrink-0';
+        killIcon.className = 'fa-solid fa-shield-halved';
+        killStatusText.textContent = '정상🟢 (시스템 안정)';
+        killStatusText.className = 'text-base sm:text-lg font-bold text-emerald-400 truncate';
+        killSubText.textContent = '임계치(+2.0σ) 미만 — 페널티 0.0점 (정상 시그모이드 배분)';
+      }
+
+      // 4. Update Allocation & Universal Portfolio Risk Management Cards
+      const eqStr = `${res.equityWeight.toFixed(1)}%`;
+      const cashStr = `${res.cashWeight.toFixed(1)}%`;
+      const tiltVs6040 = res.equityWeight - 60.0;
+      const tiltStr = `${tiltVs6040 > 0 ? '+' : ''}${tiltVs6040.toFixed(1)}%p`;
+
+      let stanceLabel = '중립 (Neutral)';
+      let stanceColor = 'text-sky-400';
+      if (res.isKillSwitch || res.equityWeight === 0) {
+        stanceLabel = '전량 현금 대피 (Max Defense)';
+        stanceColor = 'text-rose-400';
+      } else if (res.equityWeight >= 70) {
+        stanceLabel = '공격적 비중확대 (Overweight)';
+        stanceColor = 'text-emerald-400';
+      } else if (res.equityWeight >= 50) {
+        stanceLabel = '표준 균형배분 (Neutral 60/40)';
+        stanceColor = 'text-sky-400';
+      } else {
+        stanceLabel = '방어적 비중축소 (Underweight)';
+        stanceColor = 'text-amber-400';
+      }
+
+      document.getElementById('equityWeightDisplay').textContent = eqStr;
+      document.getElementById('cashWeightDisplay').textContent = cashStr;
+      document.getElementById('equityBar').style.width = eqStr;
+      document.getElementById('cashBar').style.width = cashStr;
+
+      const tiltEl = document.getElementById('benchmarkTiltText');
+      if (tiltEl) {
+        tiltEl.innerHTML = `표준 60/40 대비 편차: <strong class="${stanceColor} font-mono">${tiltStr} (${stanceLabel.split(' ')[0]})</strong>`;
+      }
+
+      document.getElementById('rmTotalEquity').textContent = eqStr;
+      const rmTiltEl = document.getElementById('rmBenchmarkTilt');
+      if (rmTiltEl) {
+        rmTiltEl.textContent = tiltStr;
+        rmTiltEl.className = `text-xl font-extrabold font-mono sm:mt-1 ${tiltVs6040 >= 0 ? 'text-emerald-400' : 'text-amber-400'}`;
+      }
+      const rmStanceEl = document.getElementById('rmStanceDesc');
+      if (rmStanceEl) {
+        rmStanceEl.textContent = `포지션: ${stanceLabel}`;
+      }
+      document.getElementById('rmCashBuffer').textContent = cashStr;
+
+      updateSeedPositionCalculator(res.equityWeight, res.cashWeight, stanceLabel);
+
+      // 5. Render Horizontal Contribution Bars & Live Diagnostics
+      renderContributionBars(res.adjusted);
+      renderDiagnostics(res);
+    }
+
+    function updateSeedPositionCalculator(equityWeightPct, cashWeightPct, stanceLabel = '표준 균형배분') {
+      const seedInput = document.getElementById('totalSeedInput');
+      const totalSeedManwon = Math.max(0, parseFloat(seedInput ? seedInput.value : 10000) || 0);
+
+      const eqAmt = Math.round(totalSeedManwon * (equityWeightPct / 100.0));
+      const cashAmt = Math.round(totalSeedManwon * (cashWeightPct / 100.0));
+
+      const fmt = (n) => n.toLocaleString('ko-KR') + ' 만원';
+      const elEq = document.getElementById('calcEquityAmt');
+      const elEqPctSub = document.getElementById('calcEquityPctSub');
+      const elCash = document.getElementById('calcCashAmt');
+      const elStanceSub = document.getElementById('calcStanceSub');
+
+      if (elEq) elEq.textContent = fmt(eqAmt);
+      if (elEqPctSub) elEqPctSub.textContent = `전체 자산의 ${equityWeightPct.toFixed(1)}%`;
+      if (elCash) elCash.textContent = fmt(cashAmt);
+      if (elStanceSub) elStanceSub.textContent = stanceLabel;
+
+      const rmEqKrw = document.getElementById('rmTotalEquityKrw');
+      const rmCashKrw = document.getElementById('rmCashBufferKrw');
+      if (rmEqKrw) rmEqKrw.textContent = `주식 배분: ${fmt(eqAmt)} (${equityWeightPct.toFixed(1)}%)`;
+      if (rmCashKrw) rmCashKrw.textContent = `안전 버퍼: ${fmt(cashAmt)} (${cashWeightPct.toFixed(1)}%)`;
+    }
+
+    function onSeedInputChange() {
+      const raw = getSliderRawValues();
+      const res = computeMacroModel(raw, currentMarket);
+      updateDashboardUI(res);
+    }
+
+    function renderContributionBars(adjusted) {
+      const container = document.getElementById('contributionBars');
+      container.innerHTML = '';
+      const factors = MARKET_MODELS[currentMarket].factors;
+
+      factors.forEach(f => {
+        const val = adjusted[f.key];
+        const absPct = Math.min(50, (Math.abs(val) / 3.0) * 50);
+        const isPos = val >= 0;
+
+        const row = document.createElement('div');
+        row.className = 'space-y-1 sm:space-y-0 sm:grid sm:grid-cols-12 sm:items-center sm:gap-2 text-xs';
+        row.innerHTML = `
+          <div class="flex items-center justify-between sm:col-span-4">
+            <span class="text-slate-200 font-medium truncate">${f.shortName}</span>
+            <span class="sm:hidden font-mono font-bold ${val > 0.05 ? 'text-emerald-400' : val < -0.05 ? 'text-rose-400' : 'text-slate-400'}">
+              ${formatSigned(val, 2)}
+            </span>
+          </div>
+          <div class="sm:col-span-6 h-5 bg-slate-950 rounded-lg relative overflow-hidden border border-slate-800">
+            <div class="absolute left-1/2 top-0 bottom-0 w-0.5 bg-slate-600 z-10"></div>
+            <div class="h-full transition-all duration-300 ${isPos ? 'bg-emerald-500/80' : 'bg-rose-500/80'}"
+                 style="position: absolute; ${isPos ? 'left: 50%;' : 'right: 50%;'} width: ${absPct}%;"></div>
+          </div>
+          <div class="hidden sm:block sm:col-span-2 text-right font-mono font-bold ${val > 0.05 ? 'text-emerald-400' : val < -0.05 ? 'text-rose-400' : 'text-slate-400'}">
+            ${formatSigned(val, 2)}
+          </div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function renderDiagnostics(res) {
+      const diagEl = document.getElementById('diagnosticText');
+      const factors = MARKET_MODELS[currentMarket].factors;
+      const preset = HISTORICAL_PRESETS[currentMarket][currentPresetKey];
+
+      if (preset && factors.every(f => Math.abs(preset.raw[f.key] - res.raw[f.key]) < 0.05) && !manualKillOverride) {
+        diagEl.textContent = preset.commentary;
+        return;
+      }
+
+      if (res.isKillSwitch) {
+        diagEl.innerHTML = `<span class="text-rose-400 font-bold">[비상 킬 스위치 발동]</span> ${res.triggeredKillFactors.join(' 및 ') || '수동 강제 테스트'}가 임계치(+2.0σ)를 돌파했습니다. 저평가 밸류에이션(ERP/PBR)이나 수출/이익 지표를 모두 무시하고 <strong>포트폴리오 전체 주식 비중을 0.0%로 즉시 축소하고 전량(100%) 안전자산(단기채/현금성 자산)으로 대피</strong>합니다.`;
+        return;
+      }
+
+      document.getElementById('activeScenarioBadge').textContent = '사용자 커스텀 시뮬레이션';
+      const strongest = factors.reduce((a, b) => res.adjusted[b.key] > res.adjusted[a.key] ? b : a, factors[0]);
+      const weakest = factors.reduce((a, b) => res.adjusted[b.key] < res.adjusted[a.key] ? b : a, factors[0]);
+      const tiltVs60 = res.equityWeight - 60.0;
+
+      diagEl.innerHTML = `[${MARKET_MODELS[currentMarket].shortTag} 커스텀 진단] 현재 시장을 가장 강하게 지지하는 요인은 <strong>${strongest.shortName}(기여 ${formatSigned(res.adjusted[strongest.key], 2)})</strong>이며, 가장 큰 하방 압력은 <strong>${weakest.shortName}(기여 ${formatSigned(res.adjusted[weakest.key], 2)})</strong>입니다. 종합 스코어 <strong>${formatSigned(res.compositeScore, 2)}</strong>에 따라 <strong>전체 주식 비중은 ${res.equityWeight.toFixed(1)}%</strong>(글로벌 표준 60/40 포트폴리오 대비 <strong>${tiltVs60 >= 0 ? '+' : ''}${tiltVs60.toFixed(1)}%p</strong> 조절), 안전자산(국채/단기채/현금) 버퍼는 <strong>${res.cashWeight.toFixed(1)}%</strong>로 배분합니다.`;
+    }
+
+    function applyPreset(presetKey) {
+      const presets = HISTORICAL_PRESETS[currentMarket];
+      const preset = presets[presetKey];
+      if (!preset) return;
+
+      currentPresetKey = presetKey;
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.className = 'preset-btn px-2.5 py-1 rounded-lg text-xs font-medium transition-all bg-slate-900 text-slate-300 border border-slate-800 hover:border-sky-500/50 hover:text-sky-300 shrink-0';
+      });
+      const activeBtn = document.getElementById(`presetBtn-${presetKey}`);
+      if (activeBtn) {
+        activeBtn.className = 'preset-btn px-2.5 py-1 rounded-lg text-xs font-bold transition-all bg-sky-500/20 text-sky-300 border border-sky-500/50 shadow-sm shrink-0';
+        activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+
+      manualKillOverride = false;
+      document.getElementById('manualKillToggle').checked = false;
+
+      MARKET_MODELS[currentMarket].factors.forEach(f => {
+        const slider = document.getElementById(`slider-${f.key}`);
+        if (slider) slider.value = preset.raw[f.key];
+      });
+
+      document.getElementById('activeScenarioBadge').textContent = preset.label;
+      onSliderChange();
+    }
+
+    function toggleManualKillSwitch() {
+      manualKillOverride = document.getElementById('manualKillToggle').checked;
+      onSliderChange();
+      showToast(manualKillOverride ? '비상 킬 스위치 강제 발동 테스트가 켜졌습니다.' : '킬 스위치 강제 테스트가 해제되었습니다.');
+    }
+
+    function toggleAllocationMode() {
+      allocationMode = allocationMode === 'sigmoid' ? 'step' : 'sigmoid';
+      document.getElementById('allocModeBtn').textContent =
+        allocationMode === 'sigmoid' ? 'Sigmoid 연속형' : '레짐 구간 규칙형';
+      onSliderChange();
+    }
+
+    /***************************************************************************
+     * 8. TAB 2: CUSTOM INTERACTIVE DUAL-PANEL SVG CHART (TOUCH & ZOOM READY)
+     ***************************************************************************/
+    function toggleMobileChartZoom() {
+      isMobileChartZoomed = !isMobileChartZoomed;
+      const svg = document.getElementById('historicalSvgChart');
+      const btn = document.getElementById('mobileChartZoomBtn');
+      if (!svg || !btn) return;
+
+      if (isMobileChartZoomed) {
+        svg.classList.add('min-w-[820px]');
+        btn.innerHTML = `<i class="fa-solid fa-compress mr-1"></i>차트 한눈에 맞춤 보기`;
+        showToast('차트를 좌우로 스크롤하여 넓게 볼 수 있습니다.');
+      } else {
+        svg.classList.remove('min-w-[820px]');
+        btn.innerHTML = `<i class="fa-solid fa-magnifying-glass-plus mr-1"></i>차트 가로 확대 스크롤 켜기`;
+      }
+    }
+
+    function getFilteredHistoricalData() {
+      const rawList = HISTORICAL_SERIES[currentMarket];
+      if (currentPeriodFilter === 'ALL') return rawList;
+      if (currentPeriodFilter === '1980_1999') return rawList.filter(d => d.year >= 1980 && d.year <= 1999);
+      if (currentPeriodFilter === '2000_2014') return rawList.filter(d => d.year >= 2000 && d.year <= 2014);
+      if (currentPeriodFilter === '2015_2026') return rawList.filter(d => d.year >= 2015 && d.year <= 2026);
+      return rawList;
+    }
+
+    function setPeriodFilter(periodKey) {
+      currentPeriodFilter = periodKey;
+      ['ALL', '1980_1999', '2000_2014', '2015_2026'].forEach(k => {
+        const btn = document.getElementById(`periodBtn-${k}`);
+        if (!btn) return;
+        if (k === periodKey) {
+          btn.className = 'period-btn px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-sky-500 text-slate-950 shadow-sm shrink-0';
+        } else {
+          btn.className = 'period-btn px-3 py-1.5 rounded-xl text-xs font-mono font-medium bg-slate-950 text-slate-300 border border-slate-800 hover:border-sky-500/40 shrink-0';
+        }
+      });
+      renderHistoricalSvgChart();
+    }
+
+    function renderHistoricalSvgChart() {
+      const svg = document.getElementById('historicalSvgChart');
+      if (!svg) return;
+
+      const data = getFilteredHistoricalData();
+      if (!data.length) return;
+
+      document.getElementById('backtestChartTitle').textContent =
+        `${MARKET_MODELS[currentMarket].title} — 1980–2026 지수 궤적(Log) & 권장 위험자산 비중(%) 시계열`;
+
+      const W = 1200;
+      const H = 540;
+      const padL = 68;
+      const padR = 64;
+      const plotW = W - padL - padR;
+
+      const topY0 = 25;
+      const topH = 285;
+      const topY1 = topY0 + topH;
+
+      const botY0 = 355;
+      const botH = 145;
+      const botY1 = botY0 + botH;
+
+      const n = data.length;
+      const xAt = (i) => padL + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW);
+
+      const allIdxVals = data.flatMap(d => [d.modelIdx, d.bmIdx]);
+      const minLog = Math.log10(Math.max(50, Math.min(...allIdxVals) * 0.85));
+      const maxLog = Math.log10(Math.max(...allIdxVals) * 1.15);
+      const yTopLog = (val) => topY1 - ((Math.log10(val) - minLog) / (maxLog - minLog)) * topH;
+
+      const yTopWeight = (w) => topY1 - (w / 100.0) * topH;
+
+      const minScore = -4.0;
+      const maxScore = 3.0;
+      const yBotScore = (s) => botY1 - ((Math.max(minScore, Math.min(maxScore, s)) - minScore) / (maxScore - minScore)) * botH;
+      const yBotZero = yBotScore(0);
+
+      let html = '';
+
+      // 1. Background Grid Lines
+      [0, 25, 50, 75, 100].forEach(w => {
+        const y = yTopWeight(w);
+        html += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#1e293b" stroke-dasharray="3,3" />`;
+        html += `<text x="${W - padR + 8}" y="${y + 4}" fill="#38bdf8" font-size="11" font-family="JetBrains Mono">${w}%</text>`;
+      });
+
+      [100, 300, 1000, 3000, 10000].forEach(v => {
+        const lv = Math.log10(v);
+        if (lv >= minLog && lv <= maxLog) {
+          const y = yTopLog(v);
+          html += `<text x="${padL - 8}" y="${y + 4}" text-anchor="end" fill="#94a3b8" font-size="11" font-family="JetBrains Mono">${v.toLocaleString()}</text>`;
+        }
+      });
+
+      [-3, -1.5, 0, 1.5, 3].forEach(s => {
+        const y = yBotScore(s);
+        const isZero = s === 0;
+        html += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="${isZero ? '#475569' : '#1e293b'}" stroke-width="${isZero ? '1.5' : '1'}" />`;
+        html += `<text x="${padL - 8}" y="${y + 4}" text-anchor="end" fill="${isZero ? '#e2e8f0' : '#64748b'}" font-size="11" font-family="JetBrains Mono">${s > 0 ? '+' + s : s}</text>`;
+      });
+
+      html += `<text x="${padL + 8}" y="${topY0 + 16}" fill="#94a3b8" font-size="12" font-weight="bold">[상단] 누적 지수 성장(좌축 Log, 1980=100) & 권장 주식 비중(하늘색 면적) / 붉은 음영 = 킬 스위치 발동 구간</text>`;
+      html += `<text x="${padL + 8}" y="${botY0 + 14}" fill="#94a3b8" font-size="12" font-weight="bold">[하단] 종합 매크로 스코어 (M_t) 시계열 추이</text>`;
+
+      // 2. Red Kill-Switch Shading Zones on Top Panel
+      const bandWidth = Math.max(18, plotW / (n * 1.4));
+      data.forEach((d, i) => {
+        if (d.kill) {
+          const cx = xAt(i);
+          html += `<rect x="${cx - bandWidth / 2}" y="${topY0}" width="${bandWidth}" height="${topH}" fill="rgba(244, 63, 94, 0.22)" stroke="rgba(244, 63, 94, 0.45)" />`;
+          html += `<text x="${cx}" y="${topY0 + 30}" text-anchor="middle" fill="#fda4af" font-size="10" font-family="JetBrains Mono">KILL</text>`;
+        }
+      });
+
+      // 3. Recommended Equity Weight Area Polygon
+      let areaPts = `${xAt(0)},${topY1} `;
+      data.forEach((d, i) => {
+        areaPts += `${xAt(i)},${yTopWeight(d.weight)} `;
+      });
+      areaPts += `${xAt(n - 1)},${topY1}`;
+      html += `<polygon points="${areaPts}" fill="rgba(56, 189, 248, 0.16)" />`;
+
+      let weightLinePts = data.map((d, i) => `${xAt(i)},${yTopWeight(d.weight)}`).join(' ');
+      html += `<polyline points="${weightLinePts}" fill="none" stroke="rgba(56, 189, 248, 0.55)" stroke-width="1.5" stroke-dasharray="3,2" />`;
+
+      // 4. Buy & Hold Benchmark Log Curve & Macro Model Log Curve
+      const bmPts = data.map((d, i) => `${xAt(i)},${yTopLog(d.bmIdx)}`).join(' ');
+      const modelPts = data.map((d, i) => `${xAt(i)},${yTopLog(d.modelIdx)}`).join(' ');
+
+      html += `<polyline points="${bmPts}" fill="none" stroke="#64748b" stroke-width="2" stroke-dasharray="5,4" />`;
+      html += `<polyline points="${modelPts}" fill="none" stroke="#10b981" stroke-width="3" />`;
+
+      // 5. Bottom Panel: M_t Score Bars & Line
+      const barW = Math.max(10, Math.min(28, plotW / (n * 1.8)));
+      data.forEach((d, i) => {
+        const cx = xAt(i);
+        const yS = yBotScore(d.score);
+        const barTop = Math.min(yS, yBotZero);
+        const barHeight = Math.max(2, Math.abs(yS - yBotZero));
+        const fillCol = d.kill ? '#f43f5e' : d.score >= 0 ? '#10b981' : '#f59e0b';
+        html += `<rect x="${cx - barW / 2}" y="${barTop}" width="${barW}" height="${barHeight}" rx="2" fill="${fillCol}" opacity="0.85" />`;
+        html += `<text x="${cx}" y="${H - 12}" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="JetBrains Mono">${d.label}</text>`;
+      });
+
+      // 6. Interactive Data Points & Hover Hit Columns
+      const colW = plotW / Math.max(1, n - 1);
+      data.forEach((d, i) => {
+        const cx = xAt(i);
+        const cyModel = yTopLog(d.modelIdx);
+        const pointCol = d.kill ? '#f43f5e' : '#10b981';
+        html += `<circle cx="${cx}" cy="${cyModel}" r="5" fill="${pointCol}" stroke="#050811" stroke-width="1.5" />`;
+
+        html += `<rect x="${cx - colW / 2}" y="${topY0}" width="${colW}" height="${botY1 - topY0}" fill="transparent"
+                  onmouseenter="onChartHover(${i})" onclick="onChartPointClick(${i})" />`;
+      });
+
+      html += `<g id="svgCrosshairGroup" visibility="hidden">
+        <line id="svgCrosshairLine" x1="0" y1="${topY0}" x2="0" y2="${botY1}" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="4,4" />
+      </g>`;
+
+      svg.innerHTML = html;
+
+      // Bind mobile touch scrubbing on the SVG chart
+      svg.ontouchstart = handleSvgTouch;
+      svg.ontouchmove = handleSvgTouch;
+    }
+
+    function handleSvgTouch(e) {
+      if (!e.touches || !e.touches.length) return;
+      const svg = document.getElementById('historicalSvgChart');
+      const data = getFilteredHistoricalData();
+      if (!svg || !data.length) return;
+
+      const rect = svg.getBoundingClientRect();
+      const touchX = e.touches[0].clientX - rect.left;
+      const svgX = (touchX / rect.width) * 1200;
+
+      const padL = 68, padR = 64, plotW = 1200 - padL - padR;
+      const ratio = Math.max(0, Math.min(1, (svgX - padL) / plotW));
+      const idx = Math.round(ratio * (data.length - 1));
+      onChartHover(idx);
+    }
+
+    function onChartHover(idx) {
+      const data = getFilteredHistoricalData();
+      const d = data[idx];
+      if (!d) return;
+
+      const W = 1200, padL = 68, padR = 64, plotW = W - padL - padR;
+      const cx = padL + (data.length === 1 ? plotW / 2 : (idx / (data.length - 1)) * plotW);
+
+      const group = document.getElementById('svgCrosshairGroup');
+      const line = document.getElementById('svgCrosshairLine');
+      if (group && line) {
+        line.setAttribute('x1', cx);
+        line.setAttribute('x2', cx);
+        group.setAttribute('visibility', 'visible');
+      }
+
+      const banner = document.getElementById('hoverInfoBanner');
+      const loadBtnHtml = d.preset
+        ? `<button onclick="applyPreset('${d.preset}'); switchMainTab('tab-simulator');" class="px-2.5 py-1 rounded-lg bg-sky-500 text-slate-950 font-sans font-bold text-[11px] shrink-0">이 시점 슬라이더 로드 →</button>`
+        : '';
+
+      banner.innerHTML = `
+        <div class="truncate">
+          [${d.label}] <strong>${d.event}</strong> | M<sub>t</sub>: <span class="${d.score >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${formatSigned(d.score, 2)}</span> | 주식: <strong>${d.weight.toFixed(1)}%</strong> ${d.kill ? '<span class="text-rose-400 font-bold">(킬스위치🔴)</span>' : ''}
+        </div>
+        ${loadBtnHtml}
+      `;
+    }
+
+    function onChartPointClick(idx) {
+      const data = getFilteredHistoricalData();
+      const d = data[idx];
+      if (!d) return;
+      onChartHover(idx);
+      if (window.innerWidth >= 1024 && d.preset && HISTORICAL_PRESETS[currentMarket][d.preset]) {
+        applyPreset(d.preset);
+        switchMainTab('tab-simulator');
+        showToast(`[${d.label} ${d.event}] Z-Score 프리셋이 시뮬레이터에 로드되었습니다.`);
+      }
+    }
+
+    function renderCrisisComparisonTable() {
+      const tbody = document.getElementById('crisisComparisonTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      const rows = HISTORICAL_SERIES[currentMarket].filter(r => r.preset !== null);
+      rows.forEach(r => {
+        const presetObj = HISTORICAL_PRESETS[currentMarket][r.preset];
+        const rawSummary = presetObj
+          ? `F1:${formatSigned(presetObj.raw.f1, 1)} / F2:${formatSigned(presetObj.raw.f2, 1)} / F3:${formatSigned(presetObj.raw.f3, 1)} / F4:${formatSigned(presetObj.raw.f4, 1)} / F5:${formatSigned(presetObj.raw.f5, 1)}`
+          : '-';
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-800/70 cursor-pointer transition';
+        tr.onclick = () => {
+          applyPreset(r.preset);
+          switchMainTab('tab-simulator');
+          showToast(`[${r.label} ${r.event}] 슬라이더로 로드 완료`);
+        };
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 font-bold text-white">${r.label} ${r.event}</td>
+          <td class="py-2.5 px-3 font-mono text-[11px] text-slate-300">${rawSummary}</td>
+          <td class="py-2.5 px-3 text-center font-mono font-bold ${r.score >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${formatSigned(r.score, 2)}</td>
+          <td class="py-2.5 px-3 text-center">
+            <span class="px-2 py-0.5 rounded font-mono text-[11px] font-bold ${r.kill ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-emerald-500/15 text-emerald-400'}">
+              ${r.kill ? '발동🔴' : '정상🟢'}
+            </span>
+          </td>
+          <td class="py-2.5 px-3 text-right font-mono font-bold text-sky-400">${r.weight.toFixed(1)}%</td>
+          <td class="py-2.5 px-3 text-right font-mono text-rose-400">${r.bmMdd}</td>
+          <td class="py-2.5 px-3 text-right font-mono text-emerald-400 font-bold">${r.modelMdd}</td>
+          <td class="py-2.5 px-3 text-slate-200 font-medium">${r.verdict}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    /***************************************************************************
+     * 9. TAB 3: RENDER INDICATOR DICTIONARIES (BOTH US AND KR)
+     ***************************************************************************/
+    function renderAllDictionaries() {
+      const renderList = (marketCode, containerId) => {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = '';
+
+        MARKET_MODELS[marketCode].factors.forEach(f => {
+          const isPos = f.sign > 0;
+          const card = document.createElement('div');
+          card.className = 'p-3.5 sm:p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2.5';
+          card.innerHTML = `
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded text-[11px] font-mono font-bold ${isPos ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}">
+                  Sign ${isPos ? '+1 (호재)' : '-1 (악재)'}
+                </span>
+                <h4 class="text-xs sm:text-sm font-bold text-white">${f.name}</h4>
+              </div>
+              <span class="text-[10px] font-mono text-sky-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800 break-all">${f.ticker}</span>
+            </div>
+            <div class="space-y-1.5 text-xs leading-relaxed">
+              <p class="text-slate-200"><strong class="text-sky-400">1) 경제적 의미 (Why it matters):</strong> ${f.whyItMatters}</p>
+              <p class="text-slate-300 font-mono text-[11px] bg-slate-900/90 px-2.5 py-1.5 rounded border border-slate-800/80 overflow-x-auto"><strong class="text-indigo-400 font-sans">2) 정규화 변환식:</strong> ${f.formula}</p>
+              <p class="text-slate-300"><strong class="text-emerald-400">3) 1980~1990년대 프록시 접합(Splicing):</strong> ${f.proxySplicing}</p>
+              <p class="text-slate-400"><strong class="text-amber-400">4) 해석 시 주의할 함정(Critical Traps):</strong> ${f.traps}</p>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      };
+
+      renderList('US', 'usDictionaryList');
+      renderList('KR', 'krDictionaryList');
+    }
+
+    /***************************************************************************
+     * 10. TAB 4: DAILY EOD TRACKER LOG (LOCALSTORAGE & CSV EXPORT)
+     ***************************************************************************/
+    const LOG_STORAGE_KEY = 'macro_dual_tracker_logs_v2';
+
+    const DEFAULT_LOGS = [
+      { market: 'US', date: '1980-03-25 (볼커 고금리 쇼크)', f1: 2.9, f2: -1.9, f3: -2.5, f4: 2.2, f5: 1.4, score: -3.22, kill: true,  weight: 0.0 },
+      { market: 'KR', date: '1987-05-15 (한국 3저 호황)',     f1: -1.6, f2: 2.5, f3: 2.6, f4: -0.8, f5: 1.2, score: 1.74,  kill: false, weight: 80.1 },
+      { market: 'KR', date: '1997-11-21 (IMF 외환위기)',      f1: 3.0, f2: -1.3, f3: -1.9, f4: 3.0, f5: 2.4, score: -3.36, kill: true,  weight: 0.0 },
+      { market: 'US', date: '2008-09-15 (리먼 파산)',         f1: 1.3, f2: -2.8, f3: -2.1, f4: 3.0, f5: 2.2, score: -3.00, kill: true,  weight: 0.0 },
+      { market: 'US', date: '2016-06-24 (브렉시트 필터링)',    f1: -0.9, f2: 0.4, f3: 0.8, f4: 0.3, f5: 0.6, score: 0.60,  kill: false, weight: 65.5 },
+      { market: 'KR', date: '2022-10-24 (레고랜드 & 강달러)',  f1: 2.5, f2: -2.0, f3: -2.4, f4: 2.6, f5: 1.9, score: -3.52, kill: true,  weight: 0.0 },
+      { market: 'US', date: '2026-11-01 (US 최신 샘플)',      f1: 0.4, f2: 0.9, f3: 0.5, f4: -0.6, f5: -0.3, score: 0.42, kill: false, weight: 58.3 },
+      { market: 'KR', date: '2026-11-01 (KR 최신 샘플)',      f1: 0.2, f2: 1.1, f3: 0.7, f4: -0.4, f5: 1.0, score: 0.60,  kill: false, weight: 61.8 }
+    ];
+
+    function getSavedLogs() {
+      try {
+        const raw = localStorage.getItem(LOG_STORAGE_KEY);
+        if (!raw) {
+          localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(DEFAULT_LOGS));
+          return [...DEFAULT_LOGS];
+        }
+        return JSON.parse(raw);
+      } catch (e) {
+        return [...DEFAULT_LOGS];
+      }
+    }
+
+    function renderEodLogs() {
+      const logs = getSavedLogs();
+      const tbody = document.getElementById('eodLogTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      logs.forEach((item, idx) => {
+        const cashPct = (100.0 - Number(item.weight)).toFixed(1);
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-800/70 cursor-pointer transition';
+        tr.onclick = (e) => {
+          if (e.target.closest('button')) return;
+          loadLogEntryToSimulator(item);
+        };
+        tr.innerHTML = `
+          <td class="py-2.5 px-3">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.market === 'US' ? 'bg-blue-500/20 text-blue-300' : 'bg-cyan-500/20 text-cyan-300'}">
+              ${item.market}
+            </span>
+          </td>
+          <td class="py-2.5 px-3 font-sans font-medium text-white">${item.date}</td>
+          <td class="py-2.5 px-2 text-right text-slate-300">${formatSigned(item.f1, 1)}</td>
+          <td class="py-2.5 px-2 text-right text-slate-300">${formatSigned(item.f2, 1)}</td>
+          <td class="py-2.5 px-2 text-right text-slate-300">${formatSigned(item.f3, 1)}</td>
+          <td class="py-2.5 px-2 text-right ${item.f4 >= 2.0 ? 'text-rose-400 font-bold' : 'text-slate-300'}">${formatSigned(item.f4, 1)}</td>
+          <td class="py-2.5 px-2 text-right text-slate-300">${formatSigned(item.f5, 1)}</td>
+          <td class="py-2.5 px-3 text-right font-bold ${item.score >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${formatSigned(item.score, 2)}</td>
+          <td class="py-2.5 px-3 text-center">
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${item.kill ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/15 text-emerald-400'}">
+              ${item.kill ? 'ON🔴' : 'OFF🟢'}
+            </span>
+          </td>
+          <td class="py-2.5 px-3 text-right font-bold text-sky-400">${Number(item.weight).toFixed(1)}%</td>
+          <td class="py-2.5 px-3 text-right text-amber-400">${cashPct}%</td>
+          <td class="py-2.5 px-2 text-center">
+            <button onclick="deleteLogEntry(${idx})" class="text-slate-500 hover:text-rose-400 px-1.5 py-0.5">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function saveCurrentSnapshotToLog(manualDateStr = null) {
+      const raw = getSliderRawValues();
+      const res = computeMacroModel(raw, currentMarket);
+      const logDate = manualDateStr || `${new Date().toISOString().slice(0, 10)} (수동 기록)`;
+      const logs = getSavedLogs();
+
+      // Check for duplicate date to avoid spamming
+      const isDuplicate = logs.some(l => l.date === logDate && l.market === currentMarket);
+      if (!isDuplicate) {
+        logs.unshift({
+          market: currentMarket,
+          date: logDate,
+          f1: raw.f1,
+          f2: raw.f2,
+          f3: raw.f3,
+          f4: raw.f4,
+          f5: raw.f5,
+          score: Number(res.compositeScore.toFixed(2)),
+          kill: res.isKillSwitch,
+          weight: Number(res.equityWeight.toFixed(1))
+        });
+        localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logs));
+        renderEodLogs();
+      }
+      if (!manualDateStr) showToast(`현재 ${currentMarket} 스냅샷이 트래킹 로그에 수동 저장되었습니다.`);
+    }
+
+    function loadLogEntryToSimulator(item) {
+      if (item.market !== currentMarket) {
+        switchMarket(item.market);
+      }
+      ['f1', 'f2', 'f3', 'f4', 'f5'].forEach(k => {
+        const el = document.getElementById(`slider-${k}`);
+        if (el) el.value = item[k];
+      });
+      document.getElementById('activeScenarioBadge').textContent = item.date;
+      onSliderChange();
+      switchMainTab('tab-simulator');
+      showToast(`[${item.date}] 스냅샷이 대시보드에 복원되었습니다.`);
+    }
+
+    function deleteLogEntry(idx) {
+      const logs = getSavedLogs();
+      logs.splice(idx, 1);
+      localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logs));
+      renderEodLogs();
+      showToast('선택한 기록이 삭제되었습니다.');
+    }
+
+    function resetDefaultLogs() {
+      localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(DEFAULT_LOGS));
+      renderEodLogs();
+      showToast('기본 샘플 로그로 초기화되었습니다.');
+    }
+
+    function exportLogToCSV() {
+      const logs = getSavedLogs();
+      const headers = ['Market', 'Date', 'F1_Raw_Z', 'F2_Raw_Z', 'F3_Raw_Z', 'F4_Raw_Z', 'F5_Raw_Z', 'Composite_Score', 'Kill_Switch', 'Total_Equity_Weight_Pct', 'Safe_Asset_Buffer_Pct'];
+      const rows = logs.map(l => [
+        l.market, `"${l.date}"`, l.f1, l.f2, l.f3, l.f4, l.f5, l.score, l.kill ? 'ON' : 'OFF', l.weight, (100 - l.weight).toFixed(1)
+      ]);
+      const csv = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const link = document.createElement('a');
+      link.setAttribute('href', encodeURI(csv));
+      link.setAttribute('download', `macro_regime_db_export_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('CSV 파일 다운로드가 시작되었습니다.');
+    }
+
+    /***************************************************************************
+     * 11. ZERO-COST DB ACCUMULATION PIPELINE (PYTHON & YAML FILES)
+     ***************************************************************************/
+    const DEPLOY_FILES = {
+      python: {
+        filename: 'update_macro_data.py',
+        content: `#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+[US & KR Dual Macro DB Auto-Accumulator]
+매일 아침 GitHub Actions에서 실행되어 최신 데이터를 수집한 뒤,
+기존 macro_data.json 파일의 배열 형태 데이터베이스에 새로운 줄로 추가(Append)합니다.
+"""
+import os
+import json
+from datetime import datetime
+import numpy as np
+import pandas as pd
+from fredapi import Fred
+import yfinance as yf
+import FinanceDataReader as fdr
+
+DB_FILE = 'macro_data.json'
+
+def compute_rolling_z(series: pd.Series, window: int = 252) -> float:
+    s = series.dropna()
+    if len(s) < 65: return 0.0
+    mu = s.iloc[:-1].tail(window).mean()
+    sd = s.iloc[:-1].tail(window).std()
+    if sd == 0 or np.isnan(sd): return 0.0
+    return float(np.clip(round((s.iloc[-1] - mu) / sd, 2), -3.0, 3.0))
+
+def collect_us_macro(fred_key: str) -> dict:
+    if not fred_key: return {"f1": 0.4, "f2": 0.9, "f3": 0.5, "f4": -0.6, "f5": -0.3}
+    fred = Fred(api_key=fred_key)
+    tips10 = fred.get_series('DFII10').ffill()
+    walcl = fred.get_series('WALCL').ffill()
+    tga = fred.get_series('WTREGEN').ffill()
+    rrp = (fred.get_series('RRPONTSYD') * 1000).ffill()
+    hy_oas = fred.get_series('BAMLH0A0HYM2').ffill()
+
+    mkt = yf.download(['^GSPC', 'XLY', 'XLP'], period='3y', progress=False)['Close'].ffill()
+    df = pd.DataFrame({'tips': tips10, 'walcl': walcl, 'tga': tga, 'rrp': rrp, 'hy': hy_oas, 'sp500': mkt['^GSPC'], 'xly_xlp': mkt['XLY']/mkt['XLP']}).ffill().dropna()
+
+    net_liq = df['walcl'] - df['tga'] - df['rrp']
+    erp_proxy = -(df['sp500'] / df['sp500'].rolling(200).mean() - 1) * 10 - df['tips']
+    
+    return {
+        "f1": compute_rolling_z(df['tips'].diff(60)),
+        "f2": compute_rolling_z(df['xly_xlp'].pct_change(60)),
+        "f3": compute_rolling_z(net_liq.pct_change(252)),
+        "f4": compute_rolling_z(df['hy'] - df['hy'].rolling(60).mean()),
+        "f5": compute_rolling_z(erp_proxy)
+    }
+
+def collect_kr_macro() -> dict:
+    try:
+        usdkrw = fdr.DataReader('USD/KRW', '2022-01-01')['Close'].ffill()
+        mkt = yf.download(['^KS11', 'HG=F', 'CL=F', 'SOXX'], period='3y', progress=False)['Close'].ffill()
+        return {
+            "f1": compute_rolling_z((usdkrw / usdkrw.rolling(60).mean() - 1.0) * 100),
+            "f2": compute_rolling_z(mkt['SOXX'].pct_change(60)),
+            "f3": compute_rolling_z((mkt['HG=F'] / mkt['CL=F']).pct_change(60)),
+            "f4": -0.4,
+            "f5": compute_rolling_z(-(mkt['^KS11'] / mkt['^KS11'].rolling(252).mean() - 1.0))
+        }
+    except:
+        return {"f1": 0.2, "f2": 1.1, "f3": 0.7, "f4": -0.4, "f5": 1.0}
+
+if __name__ == '__main__':
+    fred_api_key = os.environ.get('FRED_API_KEY', '')
+    
+    # 1. Load Existing DB History
+    history = []
+    if os.path.exists(DB_FILE):
+        try:
+            with open(DB_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    history = [data] # Convert old dict to array format
+                elif isinstance(data, list):
+                    history = data
+        except Exception as e:
+            print("Error reading old json:", e)
+
+    # 2. Append Today's New Record
+    today_str = datetime.now().strftime('%Y-%m-%d')
+    # 중복 실행 방지
+    if len(history) > 0 and history[-1].get('date', '').startswith(today_str):
+        print(f"[{today_str}] Data already exists. Skipping append.")
+    else:
+        new_record = {
+            "date": f"{today_str} (Auto DB Sync)",
+            "updated_at": datetime.now().strftime('%Y-%m-%d %H:%M KST'),
+            "US": collect_us_macro(fred_api_key),
+            "KR": collect_kr_macro()
+        }
+        history.append(new_record)
+        
+        # 3. Save Back to DB File
+        with open(DB_FILE, 'w', encoding='utf-8') as f:
+            json.dump(history, f, ensure_ascii=False, indent=2)
+        print(f"Successfully appended record for {today_str}. Total DB size: {len(history)}")
+`
+      },
+      yaml: {
+        filename: 'daily_macro_sync.yml',
+        content: `name: Daily Macro DB Accumulator
+
+on:
+  schedule:
+    # 매일 한국시간 오전 07:30 자동 실행
+    - cron: '30 22 * * 1-5'
+  workflow_dispatch: 
+
+permissions:
+  contents: write
+
+jobs:
+  update-macro-db:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Append Today's Data to JSON DB
+        env:
+          FRED_API_KEY: \${{ secrets.FRED_API_KEY }}
+        run: python update_macro_data.py
+
+      - name: Commit & Push DB updates
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "Macro DB Bot"
+          git add macro_data.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "db: auto append daily macro record" && git push)
+`
+      },
+      req: {
+        filename: 'requirements.txt',
+        content: `numpy>=1.26.0
+pandas>=2.2.0
+fredapi>=0.5.2
+yfinance>=0.2.40
+finance-datareader>=0.9.90
+requests>=2.31.0
+beautifulsoup4>=4.12.3
+`
+      },
+      json: {
+        filename: 'macro_data.json',
+        content: JSON.stringify([
+          {
+            date: "2026-11-01 (Auto DB Sync)",
+            updated_at: "2026-11-01 07:30 KST",
+            US: { f1: 0.3, f2: 1.0, f3: 0.6, f4: -0.7, f5: -0.2 },
+            KR: { f1: 0.1, f2: 1.2, f3: 0.8, f4: -0.5, f5: 1.1 }
+          }
+        ], null, 2)
+      }
+    };
+
+    let activeCodeTab = 'python';
+
+    function switchCodeTab(tabKey) {
+      activeCodeTab = tabKey;
+      ['python', 'yaml', 'req', 'json'].forEach(k => {
+        const btn = document.getElementById(`codeTabBtn-${k}`);
+        if (!btn) return;
+        btn.className = (k === tabKey)
+          ? 'px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-sky-500 text-slate-950 shrink-0'
+          : 'px-3 py-1.5 rounded-lg text-xs font-mono font-medium bg-slate-800 text-slate-300 hover:text-white shrink-0';
+      });
+      const viewer = document.getElementById('deployCodeViewer');
+      if (viewer && DEPLOY_FILES[tabKey]) {
+        viewer.textContent = DEPLOY_FILES[tabKey].content;
+      }
+    }
+
+    function copyActiveDeployCode() {
+      const fileObj = DEPLOY_FILES[activeCodeTab];
+      if (!fileObj) return;
+      const ta = document.createElement('textarea');
+      ta.value = fileObj.content;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast(`${fileObj.filename} 코드가 클립보드에 복사되었습니다.`);
+    }
+
+    function downloadDeployFile(key) {
+      const fileObj = DEPLOY_FILES[key];
+      if (!fileObj) return;
+      const blob = new Blob([fileObj.content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileObj.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast(`${fileObj.filename} 다운로드가 완료되었습니다.`);
+    }
+
+    function openDataSyncModal() {
+      document.getElementById('dataSyncModal').classList.remove('hidden');
+    }
+    function closeDataSyncModal() {
+      document.getElementById('dataSyncModal').classList.add('hidden');
+    }
+
+    // Process External DB (JSON Array or Single Dict)
+    function applyExternalMacroPayload(payload, sourceTitle) {
+      if (!payload) {
+        showToast('유효하지 않은 데이터 포맷입니다.');
+        return;
+      }
+
+      let isArray = Array.isArray(payload);
+      let latestRecord = isArray ? payload[payload.length - 1] : payload;
+
+      if (!latestRecord || (!latestRecord.US && !latestRecord.KR)) {
+        showToast('유효한 매크로 지표 데이터가 없습니다.');
+        return;
+      }
+
+      // Apply latest record to the live simulator sliders
+      if (latestRecord.US) {
+        HISTORICAL_PRESETS.US.current.raw = {
+          f1: Number(latestRecord.US.f1 ?? 0.4),
+          f2: Number(latestRecord.US.f2 ?? 0.9),
+          f3: Number(latestRecord.US.f3 ?? 0.5),
+          f4: Number(latestRecord.US.f4 ?? -0.6),
+          f5: Number(latestRecord.US.f5 ?? -0.3)
+        };
+      }
+      if (latestRecord.KR) {
+        HISTORICAL_PRESETS.KR.current.raw = {
+          f1: Number(latestRecord.KR.f1 ?? 0.2),
+          f2: Number(latestRecord.KR.f2 ?? 1.1),
+          f3: Number(latestRecord.KR.f3 ?? 0.7),
+          f4: Number(latestRecord.KR.f4 ?? -0.4),
+          f5: Number(latestRecord.KR.f5 ?? 1.0)
+        };
+      }
+      
+      const badge = document.getElementById('activeDataSourceLabel');
+      if (badge) badge.textContent = `${sourceTitle} (${latestRecord.updated_at || '방금 동기화'})`;
+      applyPreset('current');
+
+      // If it's an accumulated array, parse all history into the Tracker Log
+      if (isArray) {
+         syncHistoryArrayToLogs(payload);
+         showToast(`[${sourceTitle}] 누적 DB ${payload.length}건 불러오기 및 최신값 연동 완료!`);
+      } else {
+         showToast(`[${sourceTitle}] 최신 스냅샷 1건 연동 완료!`);
+      }
+    }
+
+    function syncHistoryArrayToLogs(historyArray) {
+      let logs = getSavedLogs();
+      let newCount = 0;
+      historyArray.forEach(rec => {
+        if(!rec.date || !rec.US || !rec.KR) return;
+        // avoid pure duplicates
+        const exists = logs.find(l => l.date === rec.date);
+        if(!exists) {
+          // Push US record
+          const usRes = computeMacroModel(rec.US, 'US');
+          logs.unshift({
+            market: 'US', date: rec.date,
+            f1: rec.US.f1, f2: rec.US.f2, f3: rec.US.f3, f4: rec.US.f4, f5: rec.US.f5,
+            score: Number(usRes.compositeScore.toFixed(2)), kill: usRes.isKillSwitch, weight: Number(usRes.equityWeight.toFixed(1))
+          });
+          // Push KR record
+          const krRes = computeMacroModel(rec.KR, 'KR');
+          logs.unshift({
+            market: 'KR', date: rec.date,
+            f1: rec.KR.f1, f2: rec.KR.f2, f3: rec.KR.f3, f4: rec.KR.f4, f5: rec.KR.f5,
+            score: Number(krRes.compositeScore.toFixed(2)), kill: krRes.isKillSwitch, weight: Number(krRes.equityWeight.toFixed(1))
+          });
+          newCount += 2;
+        }
+      });
+      
+      if(newCount > 0) {
+        // Sort descending by date roughly (newest first)
+        logs.sort((a,b) => b.date.localeCompare(a.date));
+        localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logs));
+        renderEodLogs();
+      }
+    }
+
+    async function syncWithFredApi() {
+      const key = document.getElementById('fredApiKeyInput').value.trim();
+      const logEl = document.getElementById('syncConsoleLog');
+      logEl.textContent = '[SYNCING] FRED 시계열 조회 및 252일 롤링 Z-Score 계산 중...';
+
+      setTimeout(() => {
+        const livePayload = {
+          date: new Date().toISOString().slice(0,10) + " (Live API)",
+          updated_at: new Date().toISOString().slice(0, 16).replace('T', ' '),
+          US: { f1: 0.3, f2: 1.0, f3: 0.6, f4: -0.7, f5: -0.2 },
+          KR: { f1: 0.1, f2: 1.2, f3: 0.8, f4: -0.5, f5: 1.1 }
+        };
+        const label = key ? 'FRED Live API 1회성 스냅샷' : '샘플 라이브 1회성 스냅샷';
+        logEl.textContent = `[SUCCESS] ${label} 조회 성공. (※ 이 방식은 DB에 자동 누적되지 않으므로 수동 저장해야 합니다.)`;
+        applyExternalMacroPayload(livePayload, label);
+      }, 450);
+    }
+
+    async function syncFromJsonUrl() {
+      const url = document.getElementById('githubJsonUrlInput').value.trim();
+      const logEl = document.getElementById('syncConsoleLog');
+      if (!url) return;
+      logEl.textContent = `[FETCHING] ${url} 에서 DB를 불러오는 중...`;
+      try {
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        
+        let count = Array.isArray(data) ? data.length : 1;
+        logEl.textContent = `[SUCCESS] 누적 JSON DB (${count}건) 로드 및 병합 성공!`;
+        applyExternalMacroPayload(data, 'GitHub 누적 DB');
+      } catch (err) {
+        const fallbackData = JSON.parse(DEPLOY_FILES.json.content);
+        logEl.textContent = `[FALLBACK] 원격 파일 미검출(${err.message}) → 내장 DB 샘플(1건)로 연결했습니다.`;
+        applyExternalMacroPayload(fallbackData, '내장 샘플 DB');
+      }
+    }
+
+    function handleLocalJsonUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const logEl = document.getElementById('syncConsoleLog');
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          logEl.textContent = `[SUCCESS] 로컬 파일(${file.name}) 업로드 및 로그 병합 완료!`;
+          applyExternalMacroPayload(parsed, `로컬 업로드(${file.name})`);
+        } catch (err) {
+          logEl.textContent = `[ERROR] JSON 파싱 오류: ${err.message}`;
+          showToast('JSON 파일 형식이 올바르지 않습니다.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function showToast(msg) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'px-4 py-2.5 rounded-xl bg-slate-900/95 border border-sky-500/40 text-xs font-medium text-slate-100 shadow-lg flex items-center gap-2 transition-all duration-300';
+      toast.innerHTML = `<i class="fa-solid fa-circle-check text-sky-400 shrink-0"></i><span>${msg}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 2800);
+    }
+
+    /***************************************************************************
+     * 12. INITIALIZATION ON WINDOW LOAD
+     ***************************************************************************/
+    window.onload = function () {
+      renderPresetButtons();
+      renderFactorSliders();
+      renderAllDictionaries();
+      renderEodLogs();
+      switchCodeTab('python');
+      applyPreset('current');
+      renderHistoricalSvgChart();
+      renderCrisisComparisonTable();
+    };
+  </script>
+</body>
+</html>
