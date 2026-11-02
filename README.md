@@ -11,7 +11,3 @@
    - 365일이 지난 과거 레코드는 삭제되지 않고 `archive/macro_data_YYYY.json`으로 자동 분리 저장되어, 10년 이상 운영해도 웹페이지 초기 로딩 파일 크기가 수십 KB 이내(`O(1)`)로 일정하게 유지됩니다.
 3. **웹페이지 접속 시 무부하 자동 동기화 (`index.html`)**
    - 페이지 로드(`window.onload`) 시 `./macro_data.json`을 정적 캐시로 즉시 읽어와 대시보드와 누적 로그 테이블을 자동 갱신합니다.
-
-## 배포 및 보안 권장 설정
-- `.github/workflows/daily_macro_sync.yml`에 기본 FRED API Key가 폴백으로 연결되어 있어 저장소에 업로드하면 즉시 작동합니다.
-- 공개(Public) 저장소로 운영할 경우 **Settings → Secrets and variables → Actions → New repository secret**에서 이름 `FRED_API_KEY`, 값 `3d08e04630fc05569922c338518764ed`를 등록해 사용하는 것을 권장합니다.
