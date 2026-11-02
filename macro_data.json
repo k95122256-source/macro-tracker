@@ -132,65 +132,65 @@
   {
     "date": "2026-11-02 (Auto DB Sync)",
     "iso_date": "2026-11-02",
-    "updated_at": "2026-11-02 07:30 KST",
+    "updated_at": "2026-11-02 12:34 KST",
     "rolling_window_days": 365,
     "engine_version": "v2.0 (Dual-Anchor 252d+1260d / Hysteresis / No-Trade Buffer)",
     "US": {
-      "f1": 0.3,
-      "f2": 1.0,
-      "f3": 0.6,
-      "f4": -0.7,
-      "f5": -0.2
+      "f1": 0.18,
+      "f2": -0.96,
+      "f3": 1.81,
+      "f4": 1.54,
+      "f5": -0.44
     },
     "KR": {
-      "f1": 0.1,
-      "f2": 1.2,
-      "f3": 0.8,
-      "f4": -0.5,
-      "f5": 1.1
+      "f1": -0.76,
+      "f2": -1.16,
+      "f3": -0.94,
+      "f4": -0.58,
+      "f5": 1.69
     },
     "US_summary": {
-      "score": 0.48,
+      "score": -0.26,
       "kill": false,
-      "hysteresis_band": false,
-      "weight": 59.5,
-      "target_raw_weight": 59.5,
-      "weight_core_floor": 59.5,
+      "hysteresis_band": true,
+      "weight": 44.8,
+      "target_raw_weight": 44.8,
+      "weight_core_floor": 44.8,
       "weight_step": 55.0,
-      "cash": 40.5,
-      "rebalance_action": false,
-      "safe_short_share_pct": 50.0,
-      "safe_long_share_pct": 50.0,
-      "safe_regime_label": "중립 바벨형 (초단기채/MMF 50% · 중장기채 50%)"
+      "cash": 55.2,
+      "rebalance_action": true,
+      "safe_short_share_pct": 25.0,
+      "safe_long_share_pct": 75.0,
+      "safe_regime_label": "크레딧 위기 알파형 (초단기채 25% · 장기국채 75%)"
     },
     "KR_summary": {
-      "score": 0.7,
+      "score": 0.19,
       "kill": false,
       "hysteresis_band": false,
-      "weight": 63.6,
-      "target_raw_weight": 63.6,
-      "weight_core_floor": 63.6,
+      "weight": 53.8,
+      "target_raw_weight": 53.8,
+      "weight_core_floor": 53.8,
       "weight_step": 55.0,
-      "cash": 36.4,
-      "rebalance_action": false,
+      "cash": 46.2,
+      "rebalance_action": true,
       "safe_short_share_pct": 50.0,
       "safe_long_share_pct": 50.0,
       "safe_regime_label": "중립 바벨형 (초단기채/MMF 50% · 중장기채 50%)"
     },
     "levels": {
       "US": {
-        "f1_label": "TIPS 10Y: 1.92% (60d +0.08%p)",
-        "f2_label": "선행 EPS 수정비율: +4.8% (상향 우위)",
-        "f3_label": "연준 순유동성: $5.88T (YoY +3.2%)",
-        "f4_label": "HY OAS: 3.06% (60d 평균 대비 -18bp)",
-        "f5_label": "S&P 500 ERP: +1.85%p (중립 버퍼)"
+        "f1_label": "TIPS 10Y: 2.63% (60d +0.20%p)",
+        "f2_label": "EPS 모멘텀(XLY/XLP 60d): -8.8%",
+        "f3_label": "순유동성: $5.74T (YoY +2.1%)",
+        "f4_label": "HY OAS: 3.26% (60d 괴리 +0.34%p)",
+        "f5_label": "ERP 안전마진 프록시: -2.98%p"
       },
       "KR": {
-        "f1_label": "원/달러: 1,374.2원 (60d 이격 +0.3%)",
-        "f2_label": "일평균 수출 YoY: +8.4% (반도체 출하 호조)",
-        "f3_label": "순상품교역조건지수: 93.8p (YoY +4.1%)",
-        "f4_label": "BBB- 회사채 스프레드: 4.15% (CP 91일 안정)",
-        "f5_label": "KOSPI 확정 PBR: 0.91배 (하단 안전마진 확보)"
+        "f1_label": "원/달러: 1,325.1원 (60d 이격 -2.49%)",
+        "f2_label": "일평균 수출·반도체 모멘텀: -10.9%",
+        "f3_label": "교역조건(구리/유가 60d): -19.7%",
+        "f4_label": "국내 크레딧 스트레스(BBB-/CP): 4.15%",
+        "f5_label": "KOSPI 확정 PBR: 0.87배 (B/M 1.15)"
       }
     }
   }
