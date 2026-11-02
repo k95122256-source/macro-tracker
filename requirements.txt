@@ -1,0 +1,7 @@
+numpy>=1.26.0
+pandas>=2.2.0
+fredapi>=0.5.2
+yfinance>=0.2.40
+finance-datareader>=0.9.90
+requests>=2.31.0
+beautifulsoup4>=4.12.3
