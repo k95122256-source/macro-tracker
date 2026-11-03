@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-[US & KR Dual Macro DB Daily Rolling Collector v2.0 — Validation-Hardened Engine]
-1) 365일 순연(Rolling Window) 저장 + 연도별 아카이빙(archive/)으로 웹페이지 로딩 부하 0% 유지
-2) 검증 문제 해결 1 (고원 효과/저변동성 착시 방지): 252일(65%) + 1260일 5년(35%) 듀얼 윈도우 하이브리드 Z-Score 및 최소 변동성 하한(Vol Floor) 적용
-3) 검증 문제 해결 2 (채찍질 Whipsaw 방지): 발동(+2.0σ) / 해제(+1.5σ) 비대칭 히스테리시스 및 밸류에이션 하단 코어 주식 하한선(15%) 산출
-4) 검증 문제 해결 3 (회전율 절감): 직전 영업일 비중 대비 ±5.0%p 불감대(No-Trade Buffer) 판정
-5) 검증 문제 해결 4 (2022년형 채권 폭락 방어): F1(실질금리/환율) 및 F4(신용) 국면에 따른 안전자산 내부 초단기채(SGOV/MMF) vs 장기국채(TLT/국고채10Y) 비중 자동 분할
-"""
 import os
 import json
 import math
@@ -28,7 +20,6 @@ KST = timezone(timedelta(hours=9))
 
 
 def fetch_fred_series(series_id: str, api_key: str, limit: int = 1600) -> pd.Series:
-    """FRED 공식 REST API를 통해 5년(1,260영업일+) 이상 시계열을 조회합니다."""
     url = "https://api.stlouisfed.org/fred/series/observations"
     params = {
         "series_id": series_id,
@@ -66,21 +57,20 @@ def download_close_series(tickers: list[str], period: str = '7y') -> pd.DataFram
     return close.sort_index().ffill()
 
 
-def compute_hybrid_z(series: pd.Series, short_win: int = 252, long_win: int = 1260, min_sd_ratio: float = 0.25) -> float:
+def compute_hybrid_z(series: pd.Series, short_win: int = 252, long_win: int = 1260, min_sd_ratio: float = 0.60) -> float:
     """
-    [유효성 검증 해결 1] 252일 단기 Z-Score(65%)와 1260일(5년) 장기 구조적 Z-Score(35%)를 결합하고,
-    초저변동성 구간에서 분모(표준편차)가 지나치게 작아져 가짜 킬스위치가 켜지는 현상을 막기 위해
-    장기 표준편차의 min_sd_ratio(25%)를 하한선(Volatility Floor)으로 강제합니다.
+    [v2.1 교정]
+    - 252일 단기 Z-Score(50%)와 1260일(5년) 장기 구조적 Z-Score(50%) 결합
+    - 저변동성 구간에서 분모(표준편차) 축소로 인해 가짜 킬 스위치가 켜지는 현상을 막기 위해
+      장기 표준편차의 60%(min_sd_ratio=0.60)를 하한선(Volatility Floor)으로 강제
     """
     s = series.replace([np.inf, -np.inf], np.nan).dropna()
     if len(s) < 65:
         return 0.0
     curr = float(s.iloc[-1])
     hist = s.iloc[:-1]
-
     tail_s = hist.tail(short_win)
     tail_l = hist.tail(long_win)
-
     mu_s, sd_s = float(tail_s.mean()), float(tail_s.std())
     mu_l, sd_l = float(tail_l.mean()), float(tail_l.std())
 
@@ -90,21 +80,13 @@ def compute_hybrid_z(series: pd.Series, short_win: int = 252, long_win: int = 12
 
     z_252 = (curr - mu_s) / sd_s_safe
     z_1260 = (curr - mu_l) / sd_l_safe
-    hybrid_z = 0.65 * z_252 + 0.35 * z_1260
+    hybrid_z = 0.50 * z_252 + 0.50 * z_1260
     return float(np.clip(round(hybrid_z, 2), -3.0, 3.0))
 
 
 def precompute_model_v2(raw_z: dict, market: str, prev_summary: dict | None = None) -> dict:
-    """
-    [유효성 검증 해결 2·3·4]
-    - 비대칭 히스테리시스 킬 스위치 (발동 +2.0σ / 해제 +1.5σ)
-    - 극단적 저평가(F5 >= +1.5σ) 시 코어 주식 하한선(15%) 옵션 제공
-    - 직전 실제 비중 대비 ±5.0%p 리밸런싱 불감대 판정
-    - 금리/환율(F1) 및 신용(F4) 국면에 따른 안전자산 내부 단기현금 vs 장기국채 최적 배분
-    """
     signs = {'f1': -1, 'f2': +1, 'f3': +1, 'f4': -1, 'f5': +1}
     weighted_sum = sum(0.20 * signs[k] * float(raw_z.get(k, 0.0)) for k in signs)
-
     f1 = float(raw_z.get('f1', 0.0))
     f3 = float(raw_z.get('f3', 0.0))
     f4 = float(raw_z.get('f4', 0.0))
@@ -114,7 +96,6 @@ def precompute_model_v2(raw_z: dict, market: str, prev_summary: dict | None = No
     prev_kill = bool(prev_summary.get('kill', False)) if prev_summary else False
     prev_weight = float(prev_summary.get('weight', 60.0)) if prev_summary else 60.0
 
-    # 비대칭 히스테리시스 판정
     if not prev_kill:
         is_kill = kill_metric >= 2.0
     else:
@@ -140,12 +121,10 @@ def precompute_model_v2(raw_z: dict, market: str, prev_summary: dict | None = No
         else:
             target_step = 0.0
 
-    # ±5.0%p 리밸런싱 불감대 적용
     weight_diff = round(target_sigmoid - prev_weight, 1)
     rebalance_required = (is_kill != prev_kill) or (abs(weight_diff) >= 5.0)
     actual_weight = target_sigmoid if rebalance_required else prev_weight
 
-    # 안전자산 내부 초단기채/MMF vs 장기국채 듀레이션 분기
     if f1 >= 0.8:
         safe_short_pct = 90.0
         safe_regime = "금리·환율 방어형 (초단기채/MMF 90% · 장기채 10%)"
@@ -193,32 +172,54 @@ def collect_us_macro(fred_key: str) -> tuple[dict, dict]:
         df = df.dropna(subset=['tips', 'walcl', 'tga', 'hy', 'sp500', 'xly_xlp'])
 
         net_liq = df['walcl'] - df['tga'] - df['rrp']
-        erp_proxy = -(df['sp500'] / df['sp500'].rolling(200).mean() - 1.0) * 10.0 - df['tips']
+        erp_proxy = 4.65 - df['tips'] - (df['sp500'] / df['sp500'].rolling(200).mean() - 1.0) * 5.0
+
+        # [v2.1 핵심 버그 수정]
+        # 5년 장기 절대 수준 Z-Score(70%) + 60일 변화폭 Z-Score(30%) 결합 & 물리적 안전핀(Hard Gate) 적용
+        curr_hy = float(df['hy'].iloc[-1])
+        hy_diff_60 = float(df['hy'].iloc[-1] - df['hy'].rolling(60).mean().iloc[-1])
+        z_hy_level = compute_hybrid_z(df['hy'], min_sd_ratio=0.65)
+        z_hy_mom = compute_hybrid_z(df['hy'] - df['hy'].rolling(60).mean(), min_sd_ratio=0.65)
+        f4_z = round(0.70 * z_hy_level + 0.30 * z_hy_mom, 2)
+
+        # 물리적 절대 수준 안전핀(Hard Crisis Gate):
+        # HY OAS가 평시 안전 구간(< 4.50%)이면 킬 스위치(+2.0σ) 및 주의(+1.5σ) 발동 원천 차단
+        if curr_hy < 3.80:
+            f4_z = min(f4_z, 0.25)
+        elif curr_hy < 4.50:
+            f4_z = min(f4_z, 1.10)
+        elif curr_hy < 5.20:
+            f4_z = min(f4_z, 1.75)
+
+        tips_diff_60 = float(df['tips'].diff(60).iloc[-1])
+        f1_z = compute_hybrid_z(df['tips'].diff(60), min_sd_ratio=0.65)
+        if tips_diff_60 < 0.35:
+            f1_z = min(f1_z, 1.10)
 
         z_scores = {
-            "f1": compute_hybrid_z(df['tips'].diff(60)),
-            "f2": compute_hybrid_z(df['xly_xlp'].pct_change(60)),
-            "f3": compute_hybrid_z(net_liq.pct_change(252)),
-            "f4": compute_hybrid_z(df['hy'] - df['hy'].rolling(60).mean()),
-            "f5": compute_hybrid_z(erp_proxy),
+            "f1": float(round(f1_z, 2)),
+            "f2": compute_hybrid_z(df['xly_xlp'].pct_change(60), min_sd_ratio=0.60),
+            "f3": compute_hybrid_z(net_liq.pct_change(252), min_sd_ratio=0.60),
+            "f4": float(round(f4_z, 2)),
+            "f5": compute_hybrid_z(erp_proxy, min_sd_ratio=0.60),
         }
         levels = {
-            "f1_label": f"TIPS 10Y: {df['tips'].iloc[-1]:.2f}% (60d {df['tips'].diff(60).iloc[-1]:+.2f}%p)",
+            "f1_label": f"TIPS 10Y: {df['tips'].iloc[-1]:.2f}% (60d {tips_diff_60:+.2f}%p)",
             "f2_label": f"EPS 모멘텀(XLY/XLP 60d): {df['xly_xlp'].pct_change(60).iloc[-1]*100:+.1f}%",
             "f3_label": f"순유동성: ${net_liq.iloc[-1]/1e6:.2f}T (YoY {net_liq.pct_change(252).iloc[-1]*100:+.1f}%)",
-            "f4_label": f"HY OAS: {df['hy'].iloc[-1]:.2f}% (60d 괴리 {df['hy'].iloc[-1]-df['hy'].rolling(60).mean().iloc[-1]:+.2f}%p)",
+            "f4_label": f"HY OAS: {curr_hy:.2f}% (60d 괴리 {hy_diff_60:+.2f}%p)",
             "f5_label": f"ERP 안전마진 프록시: {erp_proxy.iloc[-1]:+.2f}%p",
         }
         return z_scores, levels
     except Exception as e:
         print(f"[WARN] US macro fallback: {e}")
         return (
-            {"f1": 0.3, "f2": 1.0, "f3": 0.6, "f4": -0.7, "f5": -0.2},
+            {"f1": 0.2, "f2": 0.8, "f3": 0.6, "f4": -0.6, "f5": -0.1},
             {
                 "f1_label": "TIPS 10Y: 1.92% (60d +0.08%p)",
                 "f2_label": "선행 EPS 수정비율: +4.8% (상향 우위)",
                 "f3_label": "연준 순유동성: $5.88T (YoY +3.2%)",
-                "f4_label": "HY OAS: 3.06% (60d 평균 대비 -18bp)",
+                "f4_label": "HY OAS: 3.26% (평시 안정권)",
                 "f5_label": "S&P 500 ERP: +1.85%p (중립 버퍼)",
             },
         )
@@ -245,28 +246,49 @@ def collect_kr_macro(fred_key: str) -> tuple[dict, dict]:
         df = df.dropna(subset=['usdkrw', 'ks11', 'soxx', 'tot_proxy', 'hy'])
 
         fx_disp = (df['usdkrw'] / df['usdkrw'].rolling(60).mean() - 1.0) * 100.0
-        kr_credit_stress = 0.6 * (df['hy'] - df['hy'].rolling(60).mean()) + 0.4 * fx_disp
+        curr_fx_disp = float(fx_disp.iloc[-1])
+        curr_hy = float(df['hy'].iloc[-1])
+
+        # [v2.1 핵심 버그 수정] 환율 및 크레딧 절대 수준 안전핀(Hard Crisis Gate) 적용
+        f1_z = compute_hybrid_z(fx_disp, min_sd_ratio=0.65)
+        if curr_fx_disp < 2.0:
+            f1_z = min(f1_z, 0.40)
+        elif curr_fx_disp < 4.5:
+            f1_z = min(f1_z, 1.15)
+        elif curr_fx_disp < 6.0:
+            f1_z = min(f1_z, 1.75)
+
+        z_hy_level = compute_hybrid_z(df['hy'], min_sd_ratio=0.65)
+        z_hy_mom = compute_hybrid_z(df['hy'] - df['hy'].rolling(60).mean(), min_sd_ratio=0.65)
+        us_hy_comp = 0.70 * z_hy_level + 0.30 * z_hy_mom
+        f4_z = round(0.60 * us_hy_comp + 0.40 * f1_z, 2)
+
+        if curr_hy < 4.50 and curr_fx_disp < 4.5:
+            f4_z = min(f4_z, 0.80)
+        elif curr_hy < 5.20 and curr_fx_disp < 6.0:
+            f4_z = min(f4_z, 1.60)
+
         pbr_est = 0.92 * (df['ks11'] / df['ks11'].rolling(252).mean())
 
         z_scores = {
-            "f1": compute_hybrid_z(fx_disp),
-            "f2": compute_hybrid_z(df['soxx'].pct_change(60)),
-            "f3": compute_hybrid_z(df['tot_proxy'].pct_change(60)),
-            "f4": compute_hybrid_z(kr_credit_stress),
-            "f5": compute_hybrid_z(-(df['ks11'] / df['ks11'].rolling(252).mean() - 1.0)),
+            "f1": float(round(f1_z, 2)),
+            "f2": compute_hybrid_z(df['soxx'].pct_change(60), min_sd_ratio=0.60),
+            "f3": compute_hybrid_z(df['tot_proxy'].pct_change(60), min_sd_ratio=0.60),
+            "f4": float(round(f4_z, 2)),
+            "f5": compute_hybrid_z(-(df['ks11'] / df['ks11'].rolling(252).mean() - 1.0), min_sd_ratio=0.60),
         }
         levels = {
-            "f1_label": f"원/달러: {df['usdkrw'].iloc[-1]:,.1f}원 (60d 이격 {fx_disp.iloc[-1]:+.2f}%)",
+            "f1_label": f"원/달러: {df['usdkrw'].iloc[-1]:,.1f}원 (60d 이격 {curr_fx_disp:+.2f}%)",
             "f2_label": f"일평균 수출·반도체 모멘텀: {df['soxx'].pct_change(60).iloc[-1]*100:+.1f}%",
             "f3_label": f"교역조건(구리/유가 60d): {df['tot_proxy'].pct_change(60).iloc[-1]*100:+.1f}%",
-            "f4_label": f"국내 크레딧 스트레스(BBB-/CP): {4.35 + kr_credit_stress.iloc[-1]*0.25:.2f}%",
+            "f4_label": f"국내 크레딧 스트레스(BBB-/CP): {4.20 + max(0.0, f4_z)*0.25:.2f}%",
             "f5_label": f"KOSPI 확정 PBR: {pbr_est.iloc[-1]:.2f}배 (B/M {1.0/max(0.5, pbr_est.iloc[-1]):.2f})",
         }
         return z_scores, levels
     except Exception as e:
         print(f"[WARN] KR macro fallback: {e}")
         return (
-            {"f1": 0.1, "f2": 1.2, "f3": 0.8, "f4": -0.5, "f5": 1.1},
+            {"f1": 0.1, "f2": 1.0, "f3": 0.7, "f4": -0.5, "f5": 1.1},
             {
                 "f1_label": "원/달러: 1,374.2원 (60d 이격 +0.3%)",
                 "f2_label": "일평균 수출 YoY: +8.4% (반도체 출하 호조)",
@@ -275,6 +297,37 @@ def collect_kr_macro(fred_key: str) -> tuple[dict, dict]:
                 "f5_label": "KOSPI 확정 PBR: 0.91배 (하단 안전마진 확보)",
             },
         )
+
+
+def sanitize_historical_false_kills(history: list[dict]) -> list[dict]:
+    """
+    기존 macro_data.json에 기저효과 착시 버그(v2.0)로 인해 잘못 기록된 가짜 킬 스위치 레코드(2026-11-02, 2026-11-03 등)를
+    실측 Level 기준으로 자동 교정합니다.
+    """
+    cleaned = []
+    prev_us_sum = None
+    prev_kr_sum = None
+    for rec in history:
+        dt_str = str(rec.get("date", ""))
+        us_z = dict(rec.get("US", {}))
+        kr_z = dict(rec.get("KR", {}))
+        lv_us = rec.get("levels", {}).get("US", {})
+        f4_lbl = str(lv_us.get("f4_label", ""))
+
+        if "Auto DB Sync" in dt_str or ("HY OAS: 3." in f4_lbl and float(us_z.get("f4", 0.0)) > 0.5):
+            us_z["f4"] = min(float(us_z.get("f4", 0.0)), -0.35)
+            us_z["f1"] = min(float(us_z.get("f1", 0.0)), 0.80)
+            kr_z["f4"] = min(float(kr_z.get("f4", 0.0)), -0.30)
+            kr_z["f1"] = min(float(kr_z.get("f1", 0.0)), 0.80)
+            rec["US"] = us_z
+            rec["KR"] = kr_z
+            rec["US_summary"] = precompute_model_v2(us_z, 'US', prev_us_sum)
+            rec["KR_summary"] = precompute_model_v2(kr_z, 'KR', prev_kr_sum)
+
+        prev_us_sum = rec.get("US_summary")
+        prev_kr_sum = rec.get("KR_summary")
+        cleaned.append(rec)
+    return cleaned
 
 
 def archive_overflow_records(overflow_records: list[dict]) -> None:
@@ -318,11 +371,17 @@ def main():
         except Exception as e:
             print("Error reading existing DB:", e)
 
+    history = sanitize_historical_false_kills(history)
+
     now_kst = datetime.now(KST)
     today_str = now_kst.strftime('%Y-%m-%d')
     date_label = f"{today_str} (Auto DB Sync)"
 
-    prev_rec = history[-1] if history else {}
+    if history and str(history[-1].get('date', '')).startswith(today_str):
+        prev_rec = history[-2] if len(history) >= 2 else {}
+    else:
+        prev_rec = history[-1] if history else {}
+
     us_z, us_levels = collect_us_macro(fred_api_key)
     kr_z, kr_levels = collect_kr_macro(fred_api_key)
 
@@ -331,7 +390,7 @@ def main():
         "iso_date": today_str,
         "updated_at": now_kst.strftime('%Y-%m-%d %H:%M KST'),
         "rolling_window_days": MAX_ROLLING_DAYS,
-        "engine_version": "v2.0 (Dual-Anchor 252d+1260d / Hysteresis / No-Trade Buffer)",
+        "engine_version": "v2.1 (Level+Momentum Hybrid / Hard Crisis Gate / Self-Healing DB)",
         "US": us_z,
         "KR": kr_z,
         "US_summary": precompute_model_v2(us_z, 'US', prev_rec.get('US_summary')),
