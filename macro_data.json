@@ -399,23 +399,23 @@
       "f1": 0.38,
       "f2": -0.66,
       "f3": 2.08,
-      "f4": 0.25,
+      "f4": -0.35,
       "f5": -0.66
     },
     "KR": {
       "f1": -0.46,
       "f2": -1.73,
       "f3": -0.78,
-      "f4": 0.63,
+      "f4": -0.3,
       "f5": 1.62
     },
     "US_summary": {
-      "score": 0.03,
+      "score": 0.15,
       "kill": false,
       "hysteresis_band": false,
       "weight": 53.2,
-      "target_raw_weight": 50.6,
-      "weight_core_floor": 50.6,
+      "target_raw_weight": 53.0,
+      "weight_core_floor": 53.0,
       "weight_step": 55.0,
       "cash": 46.8,
       "rebalance_action": false,
@@ -424,15 +424,15 @@
       "safe_regime_label": "중립 바벨형 (초단기채/MMF 50% · 중장기채 50%)"
     },
     "KR_summary": {
-      "score": -0.21,
+      "score": -0.03,
       "kill": false,
       "hysteresis_band": false,
-      "weight": 45.8,
-      "target_raw_weight": 45.8,
-      "weight_core_floor": 45.8,
+      "weight": 53.8,
+      "target_raw_weight": 49.4,
+      "weight_core_floor": 49.4,
       "weight_step": 55.0,
-      "cash": 54.2,
-      "rebalance_action": true,
+      "cash": 46.2,
+      "rebalance_action": false,
       "safe_short_share_pct": 50.0,
       "safe_long_share_pct": 50.0,
       "safe_regime_label": "중립 바벨형 (초단기채/MMF 50% · 중장기채 50%)"
@@ -451,6 +451,71 @@
         "f3_label": "교역조건(구리/유가 60d): -14.8%",
         "f4_label": "국내 크레딧 스트레스(BBB-/CP): 4.36%",
         "f5_label": "KOSPI 확정 PBR: 0.85배 (B/M 1.18)"
+      }
+    }
+  },
+  {
+    "date": "2026-11-07 (Auto DB Sync)",
+    "iso_date": "2026-11-07",
+    "updated_at": "2026-11-07 08:11 KST",
+    "rolling_window_days": 365,
+    "engine_version": "v2.1 (Level+Momentum Hybrid / Hard Crisis Gate / Self-Healing DB)",
+    "US": {
+      "f1": 0.2,
+      "f2": -0.51,
+      "f3": 2.08,
+      "f4": 0.25,
+      "f5": -0.59
+    },
+    "KR": {
+      "f1": -0.46,
+      "f2": -1.76,
+      "f3": -0.73,
+      "f4": 0.8,
+      "f5": 1.81
+    },
+    "US_summary": {
+      "score": 0.11,
+      "kill": false,
+      "hysteresis_band": false,
+      "weight": 53.2,
+      "target_raw_weight": 52.2,
+      "weight_core_floor": 52.2,
+      "weight_step": 55.0,
+      "cash": 46.8,
+      "rebalance_action": false,
+      "safe_short_share_pct": 50.0,
+      "safe_long_share_pct": 50.0,
+      "safe_regime_label": "중립 바벨형 (초단기채/MMF 50% · 중장기채 50%)"
+    },
+    "KR_summary": {
+      "score": -0.2,
+      "kill": false,
+      "hysteresis_band": false,
+      "weight": 46.0,
+      "target_raw_weight": 46.0,
+      "weight_core_floor": 46.0,
+      "weight_step": 55.0,
+      "cash": 54.0,
+      "rebalance_action": true,
+      "safe_short_share_pct": 50.0,
+      "safe_long_share_pct": 50.0,
+      "safe_regime_label": "중립 바벨형 (초단기채/MMF 50% · 중장기채 50%)"
+    },
+    "levels": {
+      "US": {
+        "f1_label": "TIPS 10Y: 2.60% (60d +0.19%p)",
+        "f2_label": "EPS 모멘텀(XLY/XLP 60d): -5.3%",
+        "f3_label": "순유동성: $5.79T (YoY +3.2%)",
+        "f4_label": "HY OAS: 3.48% (60d 괴리 +0.51%p)",
+        "f5_label": "ERP 안전마진 프록시: +2.02%p"
+      },
+      "KR": {
+        "f1_label": "원/달러: 1,334.0원 (60d 이격 -1.50%)",
+        "f2_label": "일평균 수출·반도체 모멘텀: -25.5%",
+        "f3_label": "교역조건(구리/유가 60d): -13.5%",
+        "f4_label": "국내 크레딧 스트레스(BBB-/CP): 4.40%",
+        "f5_label": "KOSPI 확정 PBR: 0.80배 (B/M 1.25)"
       }
     }
   }
